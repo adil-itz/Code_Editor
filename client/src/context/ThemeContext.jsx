@@ -4,7 +4,7 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
-    return localStorage.getItem('nexus-ide-theme') || 'system';
+    return localStorage.getItem('nexus-ide-theme') || 'dark';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState(() => {

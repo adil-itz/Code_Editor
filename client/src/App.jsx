@@ -7,7 +7,7 @@ import { Home } from './pages/Home';
 export default function App() {
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-background text-foreground transition-colors duration-200 selection:bg-brand-primary/20 selection:text-brand-primary">
+      <div className="min-h-screen bg-bg-primary text-text-primary transition-colors duration-200">
         <Navbar />
         <Home />
         <Footer />
