@@ -2,58 +2,68 @@
 
 @layer base {
   :root {
-    --bg-primary: #F8FAFC;
-    --bg-secondary: #F1F5F9;
+    --bg-primary: #F7F7F8;
+    --bg-deep: #EBEBEF;
     --surface: #FFFFFF;
-    --surface-elevated: #FFFFFF;
-    --border-color: #E2E8F0;
-    --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --text-muted: #64748B;
-    --brand-primary: #2563EB;
-    --brand-accent: #0891B2;
-    --success: #22C55E;
-    --warning: #F59E0B;
-    --error: #EF4444;
+    --surface-elevated: #F1F1F3;
+    --surface-secondary: #E4E4E8;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --border-subtle: rgba(0, 0, 0, 0.05);
+    --text-primary: #171719;
+    --text-secondary: #5F6368;
+    --text-muted: #80868B;
+    --brand-primary: #E5484D;
+    --brand-deep: #C9373C;
+    --brand-soft: #FF7777;
+    --success: #16A34A;
+    --warning: #D97706;
+    --error: #E5484D;
   }
 
   .dark {
-    --bg-primary: #0B0F14;
-    --bg-secondary: #10161D;
-    --surface: #151C24;
-    --surface-elevated: #1B2430;
-    --border-color: #27313D;
-    --text-primary: #F5F7FA;
-    --text-secondary: #9AA6B2;
-    --text-muted: #667281;
-    --brand-primary: #4F8CFF;
-    --brand-accent: #22D3EE;
-    --success: #22C55E;
-    --warning: #F59E0B;
-    --error: #EF4444;
+    --bg-primary: #0B0B0C;
+    --bg-deep: #080809;
+    --surface: #111113;
+    --surface-elevated: #171719;
+    --surface-secondary: #1D1D20;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --text-primary: #F5F5F5;
+    --text-secondary: #A1A1AA;
+    --text-muted: #71717A;
+    --brand-primary: #FF5C5C;
+    --brand-deep: #E5484D;
+    --brand-soft: #FF7777;
+    --success: #4ADE80;
+    --warning: #FBBF24;
+    --error: #FF5C5C;
   }
 
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
   }
 }
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-background: var(--bg-primary);
-  --color-secondary-bg: var(--bg-secondary);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-deep: var(--bg-deep);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
-  --color-border: var(--border-color);
-  --color-foreground: var(--text-primary);
-  --color-secondary-text: var(--text-secondary);
-  --color-muted-text: var(--text-muted);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border-main: var(--border-color);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --color-brand-primary: var(--brand-primary);
-  --color-brand-accent: var(--brand-accent);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
   --color-status-success: var(--success);
   --color-status-warning: var(--warning);
   --color-status-error: var(--error);
@@ -68,23 +78,9 @@
   animation: cursorBlink 1s infinite;
 }
 
-.bg-grid-pattern {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(120, 140, 160, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(120, 140, 160, 0.07) 1px, transparent 1px);
-}
-
-.dark .bg-grid-pattern {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-}
-
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -93,7 +89,7 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 9999px;
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {

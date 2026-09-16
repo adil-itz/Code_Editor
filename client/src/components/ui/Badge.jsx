@@ -1,17 +1,29 @@
 import React from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
-export function Badge({ children, variant = 'default', className = '' }) {
-  const baseStyles = 'inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full border transition-colors';
-
+export function Badge({ children, variant = 'default', dot = false, className }) {
+  const base = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border";
+  
   const variants = {
-    default: 'bg-brand-primary/10 text-brand-primary border-brand-primary/20 dark:bg-brand-primary/15 dark:border-brand-primary/30',
-    accent: 'bg-brand-accent/10 text-brand-accent border-brand-accent/20 dark:bg-brand-accent/15 dark:border-brand-accent/30',
-    outline: 'bg-secondary-bg text-secondary-text border-border',
-    success: 'bg-status-success/10 text-status-success border-status-success/20',
+    default: "bg-surface-elevated text-text-secondary border-border-main",
+    accent: "bg-brand-primary/10 text-brand-primary border-brand-primary/20",
+    success: "bg-status-success/10 text-status-success border-status-success/20",
+    warning: "bg-status-warning/10 text-status-warning border-status-warning/20",
+    muted: "bg-surface text-text-muted border-border-subtle"
+  };
+
+  const dotColors = {
+    default: "bg-text-secondary",
+    accent: "bg-brand-primary",
+    success: "bg-status-success",
+    warning: "bg-status-warning",
+    muted: "bg-text-muted"
   };
 
   return (
-    <span className={`${baseStyles} ${variants[variant] || variants.default} ${className}`}>
+    <span className={twMerge(clsx(base, variants[variant], className))}>
+      {dot && <span className={clsx("w-1.5 h-1.5 rounded-full animate-pulse", dotColors[variant])} />}
       {children}
     </span>
   );

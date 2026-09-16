@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Code2, Menu, X, ArrowRight, Sparkles } from 'lucide-react';
-import { ThemeToggle } from '../ui/ThemeToggle';
+import { motion } from 'framer-motion';
+import { Terminal, ArrowUpRight, Code2, Sparkles, BookOpen, Layers } from 'lucide-react';
+import { ThemeSwitcher } from '../ui/ThemeSwitcher';
 import { Button } from '../ui/Button';
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,98 +16,61 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: 'Features', href: '#features' },
-    { name: 'Languages', href: '#languages' },
-    { name: 'Editor', href: '#editor' },
-    { name: 'Workflow', href: '#workflow' },
-    { name: 'Documentation', href: '#docs' },
+    { label: 'Product', href: '#product' },
+    { label: 'Editor', href: '#editor' },
+    { label: 'Languages', href: '#languages' },
+    { label: 'Documentation', href: '#docs' }
   ];
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
-        scrolled
-          ? 'bg-background/85 backdrop-blur-md border-b border-border shadow-xs py-3'
-          : 'bg-background/40 backdrop-blur-xs border-b border-border/40 py-4'
+    <motion.header
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled 
+          ? 'py-2.5 bg-bg-primary/80 backdrop-blur-md border-b border-border-main shadow-lg shadow-black/20' 
+          : 'py-4 bg-transparent border-b border-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all duration-200">
-              <Code2 className="w-5 h-5" />
+            <div className="relative w-8 h-8 rounded-lg bg-surface-elevated border border-border-main flex items-center justify-center group-hover:border-brand-primary/50 transition-colors duration-200 shadow-xs">
+              <Terminal className="w-4 h-4 text-brand-primary transition-transform group-hover:scale-110 duration-200" />
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-brand-primary shadow-xs shadow-brand-primary" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-lg tracking-tight font-sans text-foreground">Nexus</span>
-                <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary font-semibold border border-brand-primary/20">IDE</span>
-              </div>
+            <div className="flex items-baseline gap-1">
+              <span className="font-sans font-bold text-base tracking-tight text-text-primary">DEVSPACE</span>
+              <span className="text-[10px] font-mono text-brand-primary font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded bg-brand-primary/10 border border-brand-primary/20">IDE</span>
             </div>
           </a>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-1 bg-surface/50 p-1 rounded-full border border-border-subtle backdrop-blur-sm">
             {navLinks.map((link) => (
               <a
-                key={link.name}
+                key={link.label}
                 href={link.href}
-                className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors duration-150"
+                className="px-4 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-elevated rounded-full transition-all duration-150"
               >
-                {link.name}
+                {link.label}
               </a>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4">
-            <ThemeToggle />
-            <a href="#signin" className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors">
+          <div className="flex items-center gap-3">
+            <ThemeSwitcher />
+            
+            <button className="hidden sm:inline-flex text-xs font-medium text-text-secondary hover:text-text-primary px-3 py-1.5 transition-colors duration-150 cursor-pointer">
               Sign In
-            </a>
-            <Button variant="primary" size="sm" icon={ArrowRight} iconPosition="right">
-              Start Coding
-            </Button>
-          </div>
-
-          <div className="flex md:hidden items-center gap-3">
-            <ThemeToggle />
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-secondary-text hover:text-foreground hover:bg-secondary-bg border border-border"
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
+
+            <Button size="sm" icon={ArrowUpRight} iconPosition="right" className="text-xs font-medium">
+              Open Editor
+            </Button>
           </div>
         </div>
       </div>
-
-      {mobileMenuOpen && (
-        <div className="md:hidden border-b border-border bg-surface/95 backdrop-blur-lg px-4 pt-4 pb-6 mt-3 space-y-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex flex-col space-y-3">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-medium text-secondary-text hover:text-foreground py-1"
-              >
-                {link.name}
-              </a>
-            ))}
-          </div>
-          <div className="pt-4 border-t border-border flex flex-col gap-3">
-            <a
-              href="#signin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-center py-2 text-sm font-medium text-secondary-text hover:text-foreground"
-            >
-              Sign In
-            </a>
-            <Button variant="primary" size="md" icon={ArrowRight} iconPosition="right" className="w-full">
-              Start Coding
-            </Button>
-          </div>
-        </div>
-      )}
-    </header>
+    </motion.header>
   );
 }
