@@ -1,0 +1,20 @@
+[
+  {
+    "id": "b9c27b37-f3dc-4fb9-93c2-e5fda533a638",
+    "name": "Test Developer",
+    "email": "test@workspace.dev",
+    "password": "$2b$10$CotZM7oEu9yUhYop6wafteDIM7hdtGaEIm6Ec.iFBaFvDkiwxPgZe",
+    "createdAt": "2026-09-16T07:43:10.117Z",
+    "resetToken": "039986d65f755e6dcdb1627526e07570f1ea1f22f29bc65bd7e393a64407ebbb",
+    "resetTokenExpiry": 1789548213134
+  },
+  {
+    "id": "f6219447-566e-4617-a208-5c7aa0e7e7a6",
+    "name": "Sk Adil",
+    "email": "skadil63718@gmail.com",
+    "password": "$2b$10$Fxhg.rByVYiuBGmleBGc5.8pMdpVNrVKT7tFeIlmYqT3xTo8twjCi",
+    "createdAt": "2026-09-16T07:50:34.636Z",
+    "resetToken": null,
+    "resetTokenExpiry": null
+  }
+]
