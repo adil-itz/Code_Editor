@@ -15,6 +15,8 @@ export async function protect(req, res, next) {
       }
 
       const { password, ...userWithoutPassword } = user;
+      userWithoutPassword.role = userWithoutPassword.role || (userWithoutPassword.email?.toLowerCase() === 'admin@gmail.com' ? 'admin' : 'user');
+      userWithoutPassword.id = user.id || user._id?.toString();
       req.user = userWithoutPassword;
       return next();
     } catch (err) {
@@ -26,3 +28,11 @@ export async function protect(req, res, next) {
     return res.status(401).json({ message: 'Not authorized, no token provided.' });
   }
 }
+
+export function requireAdmin(req, res, next) {
+  if (req.user && req.user.role === 'admin') {
+    return next();
+  }
+  return res.status(403).json({ message: 'Forbidden: Admin access required.' });
+}
+

@@ -46,7 +46,7 @@ export async function findUserById(id) {
   return users.find(u => u.id === id);
 }
 
-export async function createUser({ name, email, password }) {
+export async function createUser({ name, email, password, role = 'user' }) {
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
@@ -58,7 +58,8 @@ export async function createUser({ name, email, password }) {
     const doc = await User.create({
       name,
       email: email.toLowerCase(),
-      password: passwordHash
+      password: passwordHash,
+      role
     });
     return doc.toJSON();
   }
@@ -74,6 +75,7 @@ export async function createUser({ name, email, password }) {
     name,
     email: email.toLowerCase(),
     password: passwordHash,
+    role: role || 'user',
     createdAt: new Date().toISOString(),
     resetToken: null,
     resetTokenExpiry: null,
@@ -133,9 +135,9 @@ export async function verifyOTP(email, otp) {
   }
 
   const users = readUsers();
-  const user = users.find(u => 
-    u.email.toLowerCase() === email.toLowerCase() && 
-    u.otp === otp && 
+  const user = users.find(u =>
+    u.email.toLowerCase() === email.toLowerCase() &&
+    u.otp === otp &&
     u.otpExpiry > Date.now()
   );
   if (!user) {
@@ -167,9 +169,9 @@ export async function resetUserPasswordWithOTP(email, otp, newPassword) {
   }
 
   const users = readUsers();
-  const index = users.findIndex(u => 
-    u.email.toLowerCase() === email.toLowerCase() && 
-    u.otp === otp && 
+  const index = users.findIndex(u =>
+    u.email.toLowerCase() === email.toLowerCase() &&
+    u.otp === otp &&
     u.otpExpiry > Date.now()
   );
 
@@ -185,3 +187,72 @@ export async function resetUserPasswordWithOTP(email, otp, newPassword) {
   const { password: _, ...userWithoutPassword } = users[index];
   return userWithoutPassword;
 }
+
+export async function seedAdminUser() {
+  const adminEmail = 'admin@gmail.com';
+  const adminPassword = '1234567890';
+  const adminName = 'Admin';
+
+  const existing = await findUserByEmail(adminEmail);
+  if (!existing) {
+    console.log('[SEED] Creating default Admin user (admin@gmail.com)...');
+    await createUser({
+      name: adminName,
+      email: adminEmail,
+      password: adminPassword,
+      role: 'admin'
+    });
+    console.log('[SEED] Default Admin user created successfully.');
+  } else if (existing.role !== 'admin') {
+    console.log('[SEED] Updating existing user admin@gmail.com to role: admin...');
+    await updateUserRole(existing.id || existing._id, 'admin');
+  }
+}
+
+export async function getAllUsers() {
+  if (isMongoConnected()) {
+    const users = await User.find({}).lean();
+    return users.map(u => {
+      const { password, otp, otpExpiry, ...rest } = u;
+      return { ...rest, id: u._id.toString() };
+    });
+  }
+
+  const users = readUsers();
+  return users.map(({ password, otp, otpExpiry, ...user }) => user);
+}
+
+export async function updateUserRole(id, role) {
+  if (isMongoConnected()) {
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).lean();
+    if (!user) throw new Error('User not found');
+    const { password, otp, otpExpiry, ...rest } = user;
+    return { ...rest, id: user._id.toString() };
+  }
+
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === id);
+  if (index === -1) throw new Error('User not found');
+
+  users[index].role = role;
+  writeUsers(users);
+
+  const { password, otp, otpExpiry, ...updatedUser } = users[index];
+  return updatedUser;
+}
+
+export async function deleteUser(id) {
+  if (isMongoConnected()) {
+    const res = await User.findByIdAndDelete(id);
+    if (!res) throw new Error('User not found');
+    return true;
+  }
+
+  const users = readUsers();
+  const filtered = users.filter(u => u.id !== id);
+  if (filtered.length === users.length) throw new Error('User not found');
+
+  writeUsers(filtered);
+  return true;
+}
+

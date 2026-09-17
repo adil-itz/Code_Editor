@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Key, Eye, EyeOff, Terminal, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
+import { useNavigate } from 'react-router-dom';
 
 export function AuthModal() {
+  const navigate = useNavigate();
   const { 
     isAuthModalOpen, 
     authModalMode, 
@@ -97,7 +99,13 @@ export function AuthModal() {
     setSuccessMsg('');
 
     try {
-      await resetPasswordWithOTP(formData.email, formData.otp, formData.password);
+      const data = await resetPasswordWithOTP(formData.email, formData.otp, formData.password);
+      const userRole = data?.user?.role || 'user';
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Password reset failed.');
     } finally {
@@ -111,13 +119,22 @@ export function AuthModal() {
     setError('');
 
     try {
+      let data;
       if (authModalMode === 'login') {
-        await login(formData.email, formData.password);
+        data = await login(formData.email, formData.password);
       } else if (authModalMode === 'signup') {
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match.');
         }
-        await signup(formData.name, formData.email, formData.password);
+        data = await signup(formData.name, formData.email, formData.password);
+      }
+
+      const rawRole = data?.user?.role || (formData.email?.toLowerCase() === 'admin@gmail.com' ? 'admin' : 'user');
+      const userRole = String(rawRole).toLowerCase();
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
       }
     } catch (err) {
       setError(err.message || 'An error occurred.');
