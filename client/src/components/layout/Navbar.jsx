@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ArrowUpRight, LogOut, User, Check, Shield } from 'lucide-react';
+import { Terminal, ArrowUpRight, LogOut, User, ShieldAlert } from 'lucide-react';
 import { ThemeSwitcher } from '../ui/ThemeSwitcher';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, isAuthenticated, logout, openAuthModal } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout, openAuthModal } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,10 +21,9 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: 'Product', href: '#product' },
-    { label: 'Editor', href: '#editor' },
-    { label: 'Languages', href: '#languages' },
-    { label: 'Documentation', href: '#docs' }
+    { label: 'Home', href: '/' },
+    { label: 'Editor', href: '/#editor' },
+    { label: 'Documentation', href: '/#docs' }
   ];
 
   return (
@@ -38,7 +39,7 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2.5 group">
             <div className="relative w-8 h-8 rounded-lg bg-surface-elevated border border-border-main flex items-center justify-center group-hover:border-brand-primary/50 transition-colors duration-200 shadow-xs">
               <Terminal className="w-4 h-4 text-brand-primary transition-transform group-hover:scale-110 duration-200" />
               <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-brand-primary shadow-xs shadow-brand-primary" />
@@ -47,19 +48,35 @@ export function Navbar() {
               <span className="font-sans font-bold text-base tracking-tight text-text-primary">DEVSPACE</span>
               <span className="text-[10px] font-mono text-brand-primary font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded bg-brand-primary/10 border border-brand-primary/20">IDE</span>
             </div>
-          </a>
+          </Link>
 
-          <nav className="hidden md:flex items-center gap-1 bg-surface/50 p-1 rounded-full border border-border-subtle backdrop-blur-sm">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="px-4 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-elevated rounded-full transition-all duration-150"
+          {/* Remove Home, Editor, Documentation links after login */}
+          {!isAuthenticated && (
+            <nav className="hidden md:flex items-center gap-1 bg-surface/50 p-1 rounded-full border border-border-subtle backdrop-blur-sm">
+              {navLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="px-4 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-elevated rounded-full transition-all duration-150"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          )}
+
+          {/* If Logged in and Admin, show Admin link in header */}
+          {isAuthenticated && isAdmin && (
+            <div className="hidden md:flex items-center">
+              <Link
+                to="/admin/dashboard"
+                className="px-4 py-1.5 text-xs font-bold rounded-full bg-status-error/10 border border-status-error/30 text-status-error hover:bg-status-error/20 transition-all flex items-center gap-1.5"
               >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>Admin Dashboard</span>
+              </Link>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <ThemeSwitcher />
@@ -68,9 +85,15 @@ export function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 p-1 px-2.5 rounded-lg bg-surface-elevated border border-border-main hover:border-brand-primary/50 text-xs font-mono font-medium text-text-primary transition-colors cursor-pointer"
+                  className={`flex items-center gap-2 p-1 px-2.5 rounded-lg border text-xs font-mono font-medium text-text-primary transition-colors cursor-pointer ${
+                    isAdmin 
+                      ? 'bg-status-error/10 border-status-error/40 hover:border-status-error' 
+                      : 'bg-surface-elevated border-border-main hover:border-brand-primary/50'
+                  }`}
                 >
-                  <div className="w-5 h-5 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center font-bold text-[10px]">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                    isAdmin ? 'bg-status-error text-bg-deep' : 'bg-brand-primary/20 text-brand-primary'
+                  }`}>
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'D'}
                   </div>
                   <span className="max-w-[100px] truncate hidden sm:inline">{user?.name || 'Developer'}</span>
@@ -82,18 +105,41 @@ export function Navbar() {
                       initial={{ opacity: 0, y: 5, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-56 bg-surface-elevated border border-border-main rounded-xl shadow-xl p-2 text-xs font-mono z-50"
+                      className="absolute right-0 mt-2 w-60 bg-surface-elevated border border-border-main rounded-xl shadow-xl p-2 text-xs font-mono z-50 space-y-1"
                     >
-                      <div className="p-2 border-b border-border-subtle">
+                      <div className="p-2.5 border-b border-border-subtle space-y-1">
                         <div className="font-bold text-text-primary truncate">{user?.name}</div>
                         <div className="text-[11px] text-text-muted truncate">{user?.email}</div>
+                        <div className="pt-1 flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            isAdmin 
+                              ? 'bg-status-error/20 text-status-error border border-status-error/30' 
+                              : 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30'
+                          }`}>
+                            Role: {user?.role || 'user'}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Show Admin Dashboard link only for admin users */}
+                      {isAdmin && (
+                        <Link
+                          to="/admin/dashboard"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="w-full flex items-center gap-2 p-2 rounded-lg text-status-error font-bold hover:bg-status-error/10 transition-colors"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5 text-status-error" />
+                          <span>Go to Admin Dashboard</span>
+                        </Link>
+                      )}
+
                       <button
                         onClick={() => {
                           setUserMenuOpen(false);
                           logout();
+                          navigate('/');
                         }}
-                        className="w-full flex items-center gap-2 p-2 mt-1 rounded-lg text-status-error hover:bg-status-error/10 transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 p-2 rounded-lg text-status-error hover:bg-status-error/10 transition-colors cursor-pointer"
                       >
                         <LogOut className="w-3.5 h-3.5" />
                         <span>Sign Out</span>
@@ -118,13 +164,15 @@ export function Navbar() {
               onClick={() => {
                 if (!isAuthenticated) {
                   openAuthModal('signup');
+                } else if (isAdmin) {
+                  navigate('/admin/dashboard');
                 } else {
-                  window.location.hash = '#editor';
+                  navigate('/editor');
                 }
               }}
               className="text-xs font-medium"
             >
-              Open Editor
+              {isAuthenticated ? (isAdmin ? 'Admin Panel' : 'Open Editor') : 'Open Editor'}
             </Button>
           </div>
         </div>

@@ -151,6 +151,7 @@ export function AuthProvider({ children }) {
       user,
       token,
       isAuthenticated: !!user,
+      isAdmin: user?.role === 'admin',
       loading,
       isAuthModalOpen,
       authModalMode,

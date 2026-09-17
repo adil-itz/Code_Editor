@@ -59,13 +59,18 @@ export async function login(req, res) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    const token = signToken(user.id);
+    const token = signToken(user.id || user._id);
     const { password: _, ...userWithoutPassword } = user;
+    const role = userWithoutPassword.role || (userWithoutPassword.email?.toLowerCase() === 'admin@gmail.com' ? 'admin' : 'user');
 
     return res.json({
       message: 'Login successful.',
       token,
-      user: userWithoutPassword
+      user: {
+        ...userWithoutPassword,
+        id: user.id || user._id?.toString(),
+        role
+      }
     });
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Login failed.' });
