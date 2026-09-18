@@ -67,17 +67,47 @@ export function UserDashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to="/workspace"
+                className="px-6 py-3.5 rounded-xl bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold text-xs font-mono transition-all duration-200 flex items-center gap-2.5 shadow-xl shadow-brand-primary/25 cursor-pointer hover:scale-105"
+              >
+                <Terminal className="w-4 h-4" />
+                <span>Open Workspace</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
               <Link
                 to="/editor"
-                className="px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold text-xs font-mono transition-all duration-200 flex items-center gap-2 shadow-lg shadow-brand-primary/20 cursor-pointer hover:scale-105"
+                className="px-4 py-3 rounded-xl bg-surface-elevated hover:bg-surface border border-border-main text-text-primary font-bold text-xs font-mono transition-all flex items-center gap-2 cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Launch Code Editor</span>
-                <ArrowRight className="w-4 h-4" />
+                <Play className="w-4 h-4 fill-current text-brand-primary" />
+                <span>Quick Scratchpad</span>
               </Link>
             </div>
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 rounded-2xl bg-surface border border-brand-primary/40 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden"
+        >
+          <div className="space-y-1.5 font-mono">
+            <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
+              <FolderGit2 className="w-5 h-5 text-brand-primary" />
+              <span>Open Workspace</span>
+            </h2>
+            <p className="text-xs text-text-secondary">
+              Continue coding where you left off in your online VS Code-style development environment.
+            </p>
+          </div>
+          <Link
+            to="/workspace"
+            className="px-6 py-3 rounded-xl bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold text-xs font-mono transition-all flex items-center gap-2 shrink-0 shadow-lg cursor-pointer"
+          >
+            <span>Launch Workspace</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </motion.div>
 
         {/* Stats Grid */}

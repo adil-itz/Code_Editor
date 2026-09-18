@@ -1,3 +1,5 @@
+import Execution from '../models/Execution.js';
+
 const JUDGE0_LANG_IDS = {
   javascript: 63,
   typescript: 74,
@@ -66,7 +68,7 @@ export function prepareCodeWithTimezone(code, language, offsetMinutes = -330) {
 
 export async function executeCodeController(req, res) {
   try {
-    const { code, language, timezoneOffset } = req.body;
+    const { code, language, stdin, projectId, fileId, timezoneOffset } = req.body;
 
     if (!code || !language) {
       return res.status(400).json({ message: 'Code and language are required.' });
@@ -108,26 +110,68 @@ export async function executeCodeController(req, res) {
 
     const processedCode = prepareCodeWithTimezone(code, lowerLang, timezoneOffset !== undefined ? timezoneOffset : -330);
 
-    const response = await fetch('https://ce.judge0.com/submissions?wait=true', {
+    const payload = {
+      source_code: Buffer.from(processedCode).toString('base64'),
+      language_id: languageId
+    };
+    if (stdin) {
+      payload.stdin = Buffer.from(stdin).toString('base64');
+    }
+
+    const response = await fetch('https://ce.judge0.com/submissions?wait=true&base64_encoded=true', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source_code: processedCode,
-        language_id: languageId
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
 
-    return res.json({
-      stdout: result.stdout || null,
-      stderr: result.stderr || null,
-      compile_output: result.compile_output || null,
+    if (!response.ok) {
+      return res.status(500).json({
+        message: result.message || result.error || `Execution engine error (Status ${response.status})`
+      });
+    }
+
+    const decodeBase64 = (str) => {
+      if (!str) return null;
+      try {
+        return Buffer.from(str, 'base64').toString('utf-8');
+      } catch (e) {
+        return str;
+      }
+    };
+
+    const outputPayload = {
+      stdout: decodeBase64(result.stdout),
+      stderr: decodeBase64(result.stderr),
+      compile_output: decodeBase64(result.compile_output),
       time: result.time || "0.00",
       memory: result.memory || 0,
       status: result.status?.description || 'Executed'
-    });
+    };
+
+    if (req.user && req.user.id) {
+      try {
+        await Execution.create({
+          user: req.user.id,
+          project: projectId || null,
+          file: fileId || null,
+          language: lowerLang,
+          judge0LanguageId: languageId,
+          stdin: stdin || '',
+          stdout: outputPayload.stdout,
+          stderr: outputPayload.stderr,
+          compileOutput: outputPayload.compile_output,
+          status: outputPayload.status,
+          time: outputPayload.time,
+          memory: outputPayload.memory
+        });
+      } catch (e) {}
+    }
+
+    return res.json(outputPayload);
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Code execution engine error.' });
   }
 }
+
