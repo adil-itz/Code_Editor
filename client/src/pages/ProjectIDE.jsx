@@ -259,10 +259,19 @@ export function ProjectIDE() {
 
   const handleRenameFile = async (fId, newName) => {
     try {
+      const parts = newName.split('.');
+      if (parts.length > 1) {
+        const ext = parts[parts.length - 1].toLowerCase();
+        if (!SUPPORTED_EXTENSIONS.has(ext)) {
+          alert(`Compiler or runtime environment for this language extension (.${ext}) is not present.`);
+          return;
+        }
+      }
       const updated = await updateFileApi(fId, { name: newName });
       setFiles(prev => prev.map(f => (f.id || f._id) === fId ? updated : f));
+      setOpenFiles(prev => prev.map(f => (f.id || f._id) === fId ? updated : f));
     } catch (err) {
-      alert(err.message);
+      alert(err.message || 'Rename failed.');
     }
   };
 

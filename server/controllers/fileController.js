@@ -128,7 +128,21 @@ export async function updateFile(req, res) {
       return res.status(403).json({ message: 'Forbidden.' });
     }
 
-    if (name !== undefined) file.name = name;
+    if (name !== undefined) {
+      const fileParts = name.split('.');
+      if (fileParts.length > 1) {
+        const ext = fileParts[fileParts.length - 1].toLowerCase();
+        if (!EXT_LANG_MAP[ext]) {
+          return res.status(400).json({
+            message: `Compiler or runtime environment for this language extension (.${ext}) is not present.`
+          });
+        }
+      }
+      file.name = name;
+      const detected = detectLanguage(name);
+      if (detected) file.language = detected;
+    }
+
     if (newPath !== undefined) file.path = newPath;
     if (language !== undefined) file.language = language;
     if (sourceCode !== undefined) {
