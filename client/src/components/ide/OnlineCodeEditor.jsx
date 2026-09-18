@@ -441,10 +441,21 @@ function prepareCodeWithTimezone(code, language, offsetMinutes = new Date().getT
     }
   }
 
-  if (lowerLang === 'javascript' || lowerLang === 'typescript') {
+  if (lowerLang === 'javascript') {
     if (!code.includes("process.env.TZ")) {
       return `process.env.TZ = 'Asia/Kolkata';\n` + code;
     }
+  }
+
+  if (lowerLang === 'typescript') {
+    let prefix = '';
+    if (!code.includes('declare var process') && !code.includes('declare const process') && !code.includes('declare let process')) {
+      prefix += 'declare var process: any;\n';
+    }
+    if (!code.includes('process.env.TZ')) {
+      prefix += `process.env.TZ = 'Asia/Kolkata';\n`;
+    }
+    return prefix + code;
   }
 
   return code;
