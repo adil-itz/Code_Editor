@@ -32,14 +32,14 @@ export function RunSection() {
   };
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         <div className="lg:col-span-7 order-2 lg:order-1">
           <div className="rounded-xl bg-surface border border-border-main shadow-2xl overflow-hidden font-mono text-xs">
             <div className="px-4 py-3 bg-surface-elevated border-b border-border-main flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-brand-primary" />
-                <span className="font-semibold text-text-primary">Execution Engine</span>
+                <Terminal className="w-4 h-4 text-brand-primary shrink-0" />
+                <span className="font-semibold text-text-primary truncate">Execution Engine</span>
               </div>
               <Button
                 size="sm"
@@ -53,16 +53,16 @@ export function RunSection() {
               </Button>
             </div>
 
-            <div className="p-4 space-y-2 min-h-[220px] bg-surface text-text-primary">
+            <div className="p-3 sm:p-4 space-y-2 min-h-[220px] bg-surface text-text-primary overflow-x-auto">
               {logs.map((log, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -5 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-start gap-3"
+                  className="flex items-start gap-2 sm:gap-3 text-[11px] sm:text-xs"
                 >
-                  <span className="text-text-muted text-[10px] w-12">{log.time}</span>
-                  <span className={`${
+                  <span className="text-text-muted text-[10px] w-10 sm:w-12 shrink-0">{log.time}</span>
+                  <span className={`break-words ${
                     log.type === 'success' ? 'text-status-success font-medium' :
                     log.type === 'metric' ? 'text-brand-primary font-mono' :
                     'text-text-secondary'
@@ -75,12 +75,12 @@ export function RunSection() {
           </div>
         </div>
 
-        <div className="lg:col-span-5 order-1 lg:order-2 space-y-6">
+        <div className="lg:col-span-5 order-1 lg:order-2 space-y-5 sm:space-y-6">
           <Badge variant="accent" dot={true}>SECTION 02 — RUN</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
             Run it instantly.
           </h2>
-          <p className="text-text-secondary text-base font-sans leading-relaxed">
+          <p className="text-text-secondary text-sm sm:text-base font-sans leading-relaxed">
             Execute code inside browser-native WebContainers powered by WebAssembly. Zero round-trips to remote cloud servers for compilation. Sub-millisecond startup times with complete POSIX terminal support.
           </p>
 

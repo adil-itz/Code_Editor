@@ -14,19 +14,19 @@ export function CredibilitySection() {
   const [activeRole, setActiveRole] = useState(roles[0]);
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
           <Badge variant="accent" dot={true}>SECTION 10 — CREDIBILITY</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary">
             Built for people who ship.
           </h2>
-          <p className="text-text-secondary text-base font-sans">
+          <p className="text-text-secondary text-sm sm:text-base font-sans">
             Engineered for developers who demand instant feedback, precision typography, and zero configuration friction.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-5xl mx-auto">
           {roles.map(r => (
             <button
               key={r.id}

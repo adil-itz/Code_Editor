@@ -50,7 +50,7 @@ export function IDEWorkspace({ interactive = true, initialCount = 7 }) {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto rounded-xl bg-surface border border-border-main shadow-2xl shadow-black/60 overflow-hidden font-sans flex flex-col h-[680px]">
+    <div className="w-full max-w-6xl mx-auto rounded-xl bg-surface border border-border-main shadow-2xl shadow-black/60 overflow-hidden font-sans flex flex-col h-[460px] sm:h-[600px] lg:h-[680px]">
       <div className="h-11 bg-bg-deep border-b border-border-main px-4 flex items-center justify-between select-none">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">

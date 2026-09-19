@@ -22,14 +22,14 @@ export function CommandPaletteSection() {
   );
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        <div className="lg:col-span-5 space-y-6">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="lg:col-span-5 space-y-5 sm:space-y-6">
           <Badge variant="accent" dot={true}>SECTION 06 — COMMAND PALETTE</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
             Everything a keystroke away.
           </h2>
-          <p className="text-text-secondary text-base font-sans leading-relaxed">
+          <p className="text-text-secondary text-sm sm:text-base font-sans leading-relaxed">
             Raycast-inspired command palette designed specifically for browser developer workflows. Instant search across files, settings, commands, and refactoring tools without reaching for your mouse.
           </p>
 

@@ -13,18 +13,18 @@ export function ProjectSection() {
   const toggle = (key) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-deep relative">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         <div className="lg:col-span-7 order-2 lg:order-1">
           <div className="rounded-xl bg-surface border border-border-main shadow-2xl overflow-hidden font-mono text-xs">
-            <div className="px-4 py-3 bg-surface-elevated border-b border-border-main flex items-center justify-between text-text-muted">
-              <span>PROJECT TREE ARCHITECTURE</span>
-              <span>12 Files • 4 Folders</span>
+            <div className="px-3 sm:px-4 py-3 bg-surface-elevated border-b border-border-main flex items-center justify-between text-text-muted text-[11px] sm:text-xs">
+              <span className="truncate">PROJECT TREE ARCHITECTURE</span>
+              <span className="shrink-0">12 Files • 4 Folders</span>
             </div>
 
-            <div className="p-4 bg-surface space-y-1">
+            <div className="p-3 sm:p-4 bg-surface space-y-1 overflow-x-auto">
               <div className="flex items-center gap-2 p-1.5 rounded bg-surface-elevated text-brand-primary font-bold">
-                <FolderOpen className="w-4 h-4 text-amber-400" />
+                <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>devspace-app</span>
               </div>
 

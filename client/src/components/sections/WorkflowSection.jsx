@@ -13,19 +13,19 @@ export function WorkflowSection() {
   ];
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
           <Badge variant="accent" dot={true}>SECTION 09 — WORKFLOW</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary">
             Don't repeat yourself.
           </h2>
-          <p className="text-text-secondary text-base font-sans">
+          <p className="text-text-secondary text-sm sm:text-base font-sans">
             Automated dev pipelines. Every save event seamlessly triggers formatting, static analysis, execution, live preview refresh, and local git tracking.
           </p>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-6xl mx-auto relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-w-6xl mx-auto relative">
           {steps.map((step, idx) => {
             const Icon = step.icon;
             return (

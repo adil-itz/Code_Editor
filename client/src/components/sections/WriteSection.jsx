@@ -26,14 +26,14 @@ export function WriteSection() {
   ];
 
   return (
-    <section id="product" className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        <div className="lg:col-span-5 space-y-6">
+    <section id="product" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="lg:col-span-5 space-y-5 sm:space-y-6">
           <Badge variant="accent" dot={true}>SECTION 01 — WRITE</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
             Write without leaving your flow.
           </h2>
-          <p className="text-text-secondary text-base font-sans leading-relaxed">
+          <p className="text-text-secondary text-sm sm:text-base font-sans leading-relaxed">
             Engineered with JetBrains Mono typography, instant syntax parsing, intelligent autocomplete, and multi-file tab switching. Experience native editor performance directly inside standard browser engines.
           </p>
 

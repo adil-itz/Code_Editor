@@ -15,7 +15,7 @@ import {
   X
 } from 'lucide-react';
 
-export function Explorer({ files, folders, activeFileId, onOpenFile, onCreateFile, onCreateFolder, onDeleteFile, onDeleteFolder, onRenameFile }) {
+export function Explorer({ files, folders, activeFileId, onOpenFile, onCreateFile, onCreateFolder, onDeleteFile, onDeleteFolder, onRenameFile, onCloseMobile }) {
   const [newFileInput, setNewFileInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFileName, setNewFileName] = useState('');
@@ -61,7 +61,10 @@ export function Explorer({ files, folders, activeFileId, onOpenFile, onCreateFil
     return (
       <div
         key={file.id || file._id}
-        onClick={() => onOpenFile(file)}
+        onClick={() => {
+          onOpenFile(file);
+          if (onCloseMobile) onCloseMobile();
+        }}
         className={`group flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-mono cursor-pointer transition-colors ${
           isSelected 
             ? 'bg-brand-primary/15 text-brand-primary border border-brand-primary/30 font-bold' 
@@ -160,6 +163,15 @@ export function Explorer({ files, folders, activeFileId, onOpenFile, onCreateFil
           >
             <FolderPlus className="w-4 h-4" />
           </button>
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="md:hidden p-1.5 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-text-primary"
+              title="Close Explorer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
