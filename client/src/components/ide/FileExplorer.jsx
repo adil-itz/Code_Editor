@@ -21,7 +21,7 @@ export function FileExplorer({ activeFile, onSelectFile }) {
   };
 
   return (
-    <div className="w-52 bg-bg-deep border-r border-border-main flex flex-col h-full select-none text-xs font-mono">
+    <div className="w-44 sm:w-52 bg-bg-deep border-r border-border-main hidden sm:flex flex-col h-full select-none text-xs font-mono shrink-0">
       <div className="px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider border-b border-border-subtle flex items-center justify-between">
         <span>Explorer</span>
         <span className="text-brand-primary font-bold">my-project</span>

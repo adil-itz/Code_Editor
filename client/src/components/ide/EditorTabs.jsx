@@ -52,7 +52,7 @@ export function EditorTabs({ openFiles = [], activeFileId, activeFile, dirtyFile
       </div>
 
       {(onCloseOthers || onCloseAll) && (
-        <div className="flex items-center gap-1 pl-2">
+        <div className="hidden xs:flex items-center gap-1 pl-2 shrink-0">
           {onCloseOthers && (
             <button
               onClick={onCloseOthers}

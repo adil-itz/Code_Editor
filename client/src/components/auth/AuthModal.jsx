@@ -10,6 +10,7 @@ export function AuthModal() {
   const { 
     isAuthModalOpen, 
     authModalMode, 
+    sessionNotice,
     closeAuthModal, 
     setAuthModalMode,
     login,
@@ -175,6 +176,17 @@ export function AuthModal() {
           </div>
 
           <div className="p-6">
+            {sessionNotice && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3 rounded-lg bg-status-warning/15 border border-status-warning/40 flex items-center gap-2 text-xs text-status-warning font-mono"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{sessionNotice}</span>
+              </motion.div>
+            )}
+
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -4 }}

@@ -13,15 +13,48 @@ import { WorkspaceHome } from './pages/WorkspaceHome';
 import { ProjectIDE } from './pages/ProjectIDE';
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return null;
-  if (!isAuthenticated) return <Navigate to="/" replace />;
+  const { isAuthenticated, loading, openAuthModal } = useAuth();
+
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      openAuthModal('login', 'Authentication required. Please log in to access this page.');
+    }
+  }, [loading, isAuthenticated, openAuthModal]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-primary text-brand-primary flex flex-col items-center justify-center font-mono text-sm gap-3">
+        <div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+        <span>Authenticating DevSpace Session...</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 }
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
-  if (loading) return null;
+  const { isAuthenticated, isAdmin, loading, openAuthModal } = useAuth();
+
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      openAuthModal('login', 'Admin authentication required.');
+    }
+  }, [loading, isAuthenticated, openAuthModal]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-primary text-brand-primary flex flex-col items-center justify-center font-mono text-sm gap-3">
+        <div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+        <span>Checking Admin Permissions...</span>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return children;

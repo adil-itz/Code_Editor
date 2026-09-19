@@ -10,14 +10,14 @@ export function PreviewSection() {
   const colorOptions = ['#FF5C5C', '#4ADE80', '#60A5FA', '#FBBF24', '#C084FC'];
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        <div className="lg:col-span-5 space-y-6">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="lg:col-span-5 space-y-5 sm:space-y-6">
           <Badge variant="accent" dot={true}>SECTION 03 — PREVIEW</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary leading-tight">
             See the result immediately.
           </h2>
-          <p className="text-text-secondary text-base font-sans leading-relaxed">
+          <p className="text-text-secondary text-sm sm:text-base font-sans leading-relaxed">
             Hot Module Replacement (HMR) synchronized directly with your browser memory. Inspect elements, debug state changes, and preview responsive UI components without leaving your workspace.
           </p>
 

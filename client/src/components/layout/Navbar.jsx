@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ArrowUpRight, LogOut, User, ShieldAlert } from 'lucide-react';
+import { Terminal, ArrowUpRight, LogOut, User, ShieldAlert, Menu, X } from 'lucide-react';
 import { ThemeSwitcher } from '../ui/ThemeSwitcher';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isAdmin, logout, openAuthModal } = useAuth();
   const navigate = useNavigate();
 
@@ -33,13 +34,13 @@ export function Navbar() {
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         scrolled 
-          ? 'py-2.5 bg-bg-primary/80 backdrop-blur-md border-b border-border-main shadow-lg shadow-black/20' 
+          ? 'py-2.5 bg-bg-primary/85 backdrop-blur-md border-b border-border-main shadow-lg shadow-black/20' 
           : 'py-4 bg-transparent border-b border-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative w-8 h-8 rounded-lg bg-surface-elevated border border-border-main flex items-center justify-center group-hover:border-brand-primary/50 transition-colors duration-200 shadow-xs">
               <Terminal className="w-4 h-4 text-brand-primary transition-transform group-hover:scale-110 duration-200" />
               <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-brand-primary shadow-xs shadow-brand-primary" />
@@ -50,7 +51,7 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Remove Home, Editor, Documentation links after login */}
+          {/* Desktop Nav links */}
           {!isAuthenticated && (
             <nav className="hidden md:flex items-center gap-1 bg-surface/50 p-1 rounded-full border border-border-subtle backdrop-blur-sm">
               {navLinks.map((link) => (
@@ -65,7 +66,7 @@ export function Navbar() {
             </nav>
           )}
 
-          {/* If Logged in and Admin, show Admin link in header */}
+          {/* Admin link on desktop */}
           {isAuthenticated && isAdmin && (
             <div className="hidden md:flex items-center">
               <Link
@@ -78,7 +79,7 @@ export function Navbar() {
             </div>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <ThemeSwitcher />
 
             {isAuthenticated ? (
@@ -121,7 +122,6 @@ export function Navbar() {
                         </div>
                       </div>
 
-                      {/* Show Admin Dashboard link only for admin users */}
                       {isAdmin && (
                         <Link
                           to="/admin/dashboard"
@@ -170,12 +170,73 @@ export function Navbar() {
                   navigate('/editor');
                 }
               }}
-              className="text-xs font-medium"
+              className="hidden sm:inline-flex text-xs font-medium"
             >
               {isAuthenticated ? (isAdmin ? 'Admin Panel' : 'Open Editor') : 'Open Editor'}
             </Button>
+
+            {/* Mobile Menu Trigger Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg bg-surface-elevated border border-border-main text-text-secondary hover:text-text-primary cursor-pointer"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden mt-3 pt-3 border-t border-border-main bg-surface-elevated/95 backdrop-blur-md rounded-2xl p-4 space-y-3 font-mono text-xs shadow-2xl overflow-hidden"
+            >
+              {!isAuthenticated && (
+                <div className="flex flex-col space-y-2">
+                  {navLinks.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-3 py-2 text-text-secondary hover:text-text-primary hover:bg-surface rounded-lg transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); openAuthModal('login'); }}
+                    className="w-full text-left px-3 py-2 text-brand-primary font-bold hover:bg-surface rounded-lg transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
+
+              <Button
+                size="sm"
+                icon={ArrowUpRight}
+                iconPosition="right"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (!isAuthenticated) {
+                    openAuthModal('signup');
+                  } else if (isAdmin) {
+                    navigate('/admin/dashboard');
+                  } else {
+                    navigate('/editor');
+                  }
+                }}
+                className="w-full text-xs font-medium py-2 justify-center"
+              >
+                {isAuthenticated ? (isAdmin ? 'Admin Panel' : 'Open Editor') : 'Open Editor'}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.header>
   );

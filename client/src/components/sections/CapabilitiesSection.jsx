@@ -15,19 +15,19 @@ export function CapabilitiesSection() {
   ];
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
           <Badge variant="accent" dot={true}>SECTION 11 — CAPABILITIES</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary">
             Every capability at your fingertips.
           </h2>
-          <p className="text-text-secondary text-base font-sans">
+          <p className="text-text-secondary text-sm sm:text-base font-sans">
             A comprehensive matrix of professional developer capabilities packaged into a quiet, ultra-responsive browser environment.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto">
           {capabilities.map((cap, idx) => {
             const Icon = cap.icon;
             return (

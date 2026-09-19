@@ -16,14 +16,14 @@ export function LanguageSection() {
   const [selectedLang, setSelectedLang] = useState(languages[0]);
 
   return (
-    <section id="languages" className="py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+    <section id="languages" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-border-subtle bg-bg-primary relative">
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
           <Badge variant="accent" dot={true}>SECTION 05 — LANGUAGES</Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-text-primary">
             Multi-language by default.
           </h2>
-          <p className="text-text-secondary text-base font-sans">
+          <p className="text-text-secondary text-sm sm:text-base font-sans">
             First-class language servers and runtime bindings for every major programming stack. Switch languages seamlessly with dedicated syntax highlighting and instant compilation.
           </p>
         </div>

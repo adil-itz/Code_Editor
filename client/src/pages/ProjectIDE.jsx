@@ -21,7 +21,7 @@ import { OutputPanel } from '../components/ide/OutputPanel';
 import { InputPanel } from '../components/ide/InputPanel';
 import { PreviewPanel } from '../components/ide/PreviewPanel';
 import { CommandPalette } from '../components/ide/CommandPalette';
-import { Terminal, Cpu, TextCursorInput as Input, Eye, AlertCircle } from 'lucide-react';
+import { Terminal, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
   const { projectId } = useParams();
@@ -53,18 +53,36 @@ export function ProjectIDE() {
   const [htmlPreview, setHtmlPreview] = useState('');
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const handleMouseDownResize = (e) => {
     e.preventDefault();
     setIsResizing(true);
   };
 
+  const handleTouchStartResize = () => {
+    setIsResizing(true);
+  };
+
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isResizing) return;
-      const newHeight = window.innerHeight - e.clientY;
-      if (newHeight >= 100 && newHeight <= 600) {
+      const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+      if (clientY === null) return;
+      const newHeight = window.innerHeight - clientY;
+      if (newHeight >= 80 && newHeight <= window.innerHeight - 100) {
         setBottomHeight(newHeight);
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (!isResizing) return;
+      if (e.touches && e.touches[0]) {
+        const clientY = e.touches[0].clientY;
+        const newHeight = window.innerHeight - clientY;
+        if (newHeight >= 80 && newHeight <= window.innerHeight - 100) {
+          setBottomHeight(newHeight);
+        }
       }
     };
 
@@ -75,10 +93,14 @@ export function ProjectIDE() {
     if (isResizing) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleMouseUp);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
     };
   }, [isResizing]);
 
@@ -568,6 +590,7 @@ export function ProjectIDE() {
         isRunning={isRunning}
         isBottomOpen={isBottomOpen}
         onToggleBottomPanel={() => setIsBottomOpen(prev => !prev)}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         editorTheme={editorTheme}
         onThemeChange={setEditorTheme}
         onSave={handleSaveActiveFile}
@@ -576,30 +599,74 @@ export function ProjectIDE() {
       />
 
       <div className="flex-1 flex overflow-hidden relative">
-        <ActivityBar
-          activeTab={activeActivityTab}
-          onTabChange={(tab) => setActiveActivityTab(tab)}
-        />
-
-        {activeActivityTab === 'explorer' && (
-          <Explorer
-            files={files}
-            folders={folders}
-            activeFileId={activeFileId}
-            onOpenFile={handleOpenFile}
-            onCreateFile={handleCreateFile}
-            onCreateFolder={handleCreateFolder}
-            onDeleteFile={handleDeleteFile}
-            onDeleteFolder={handleDeleteFolder}
-            onRenameFile={handleRenameFile}
+        <div className="hidden md:flex shrink-0">
+          <ActivityBar
+            activeTab={activeActivityTab}
+            onTabChange={(tab) => setActiveActivityTab(tab)}
           />
-        )}
 
-        {activeActivityTab === 'search' && (
-          <SearchPanel
-            files={files}
-            onOpenFile={handleOpenFile}
-          />
+          {activeActivityTab === 'explorer' && (
+            <Explorer
+              files={files}
+              folders={folders}
+              activeFileId={activeFileId}
+              onOpenFile={handleOpenFile}
+              onCreateFile={handleCreateFile}
+              onCreateFolder={handleCreateFolder}
+              onDeleteFile={handleDeleteFile}
+              onDeleteFolder={handleDeleteFolder}
+              onRenameFile={handleRenameFile}
+            />
+          )}
+
+          {activeActivityTab === 'search' && (
+            <SearchPanel
+              files={files}
+              onOpenFile={handleOpenFile}
+            />
+          )}
+        </div>
+
+        {/* Mobile Sidebar Overlay Drawer */}
+        {isMobileSidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-40 flex">
+            <div 
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs" 
+              onClick={() => setIsMobileSidebarOpen(false)} 
+            />
+            <div className="relative z-50 flex h-full shadow-2xl bg-bg-primary">
+              <ActivityBar
+                activeTab={activeActivityTab}
+                onTabChange={(tab) => setActiveActivityTab(tab)}
+              />
+              {activeActivityTab === 'explorer' && (
+                <Explorer
+                  files={files}
+                  folders={folders}
+                  activeFileId={activeFileId}
+                  onOpenFile={(file) => {
+                    handleOpenFile(file);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  onCreateFile={handleCreateFile}
+                  onCreateFolder={handleCreateFolder}
+                  onDeleteFile={handleDeleteFile}
+                  onDeleteFolder={handleDeleteFolder}
+                  onRenameFile={handleRenameFile}
+                  onCloseMobile={() => setIsMobileSidebarOpen(false)}
+                />
+              )}
+              {activeActivityTab === 'search' && (
+                <SearchPanel
+                  files={files}
+                  onOpenFile={(file) => {
+                    handleOpenFile(file);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                />
+              )}
+            </div>
+          </div>
         )}
 
         <div className="flex-1 flex flex-col overflow-hidden bg-bg-deep">
@@ -639,44 +706,51 @@ export function ProjectIDE() {
           {isBottomOpen && (
             <div
               style={{ height: `${bottomHeight}px` }}
-              className="border-t border-border-main flex flex-col bg-bg-deep shrink-0 font-mono text-xs relative"
+              className="border-t border-border-main flex flex-col bg-bg-deep shrink-0 font-mono text-xs relative max-h-[85vh]"
             >
               <div
                 onMouseDown={handleMouseDownResize}
-                className="h-1.5 w-full bg-border-main/40 hover:bg-brand-primary cursor-ns-resize transition-colors absolute -top-1 left-0 right-0 z-20"
-                title="Drag to resize bottom panel"
-              />
+                onTouchStart={handleTouchStartResize}
+                className="h-2 w-full bg-border-main/50 hover:bg-brand-primary active:bg-brand-primary cursor-ns-resize transition-colors absolute -top-1 left-0 right-0 z-20 flex items-center justify-center"
+                title="Drag or slide up/down to resize bottom panel"
+              >
+                <div className="w-10 h-1 bg-text-muted/40 rounded-full" />
+              </div>
 
-              <div className="h-8 bg-surface-elevated border-b border-border-main px-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="h-9 bg-surface-elevated border-b border-border-main px-2.5 flex items-center justify-between gap-2 select-none overflow-hidden">
+                <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 scrollbar-none py-1">
                   <button
                     onClick={() => setBottomTab('output')}
-                    className={`px-3 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${bottomTab === 'output' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                      }`}
+                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                      bottomTab === 'output' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                    }`}
                   >
                     <Cpu className="w-3.5 h-3.5" />
                     <span>OUTPUT</span>
                   </button>
                   <button
                     onClick={() => setBottomTab('terminal')}
-                    className={`px-3 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${bottomTab === 'terminal' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                      }`}
+                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                      bottomTab === 'terminal' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                    }`}
                   >
                     <Terminal className="w-3.5 h-3.5" />
                     <span>TERMINAL</span>
                   </button>
                   <button
                     onClick={() => setBottomTab('input')}
-                    className={`px-3 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${bottomTab === 'input' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                      }`}
+                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                      bottomTab === 'input' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                    }`}
                   >
                     <Input className="w-3.5 h-3.5" />
                     <span>INPUT (stdin)</span>
                   </button>
                   <button
                     onClick={() => setBottomTab('preview')}
-                    className={`px-3 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${bottomTab === 'preview' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                      }`}
+                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                      bottomTab === 'preview' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                    }`}
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>PREVIEW</span>
@@ -685,9 +759,11 @@ export function ProjectIDE() {
 
                 <button
                   onClick={() => setIsBottomOpen(false)}
-                  className="text-text-muted hover:text-text-primary text-xs font-bold px-2 py-0.5 cursor-pointer"
+                  className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded bg-surface border border-border-main text-text-muted hover:text-text-primary text-xs font-bold cursor-pointer transition-colors z-10 shadow-xs"
+                  title="Close Terminal Panel"
                 >
-                  ✕ Close
+                  <X className="w-3.5 h-3.5 text-status-error shrink-0" />
+                  <span className="text-[11px] font-bold">Close</span>
                 </button>
               </div>
 

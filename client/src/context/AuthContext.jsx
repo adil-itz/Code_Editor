@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
 const AuthContext = createContext();
 
 const API_BASE_URL = 'http://localhost:5000/api/auth';
+const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 5 minutes in milliseconds
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('devspace-token') || null);
@@ -10,15 +11,78 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
+  const [sessionNotice, setSessionNotice] = useState('');
 
-  const openAuthModal = (mode = 'login') => {
+  const inactivityTimerRef = useRef(null);
+
+  const openAuthModal = (mode = 'login', notice = '') => {
     setAuthModalMode(mode);
+    setSessionNotice(notice);
     setIsAuthModalOpen(true);
   };
 
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
+    setSessionNotice('');
   };
+
+  const logout = useCallback((reason = '') => {
+    localStorage.removeItem('devspace-token');
+    setToken(null);
+    setUser(null);
+    if (reason) {
+      setSessionNotice(reason);
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+    }
+  }, []);
+
+  // 5-Minute Inactivity Timer Management
+  useEffect(() => {
+    if (!token || !user) {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+      return;
+    }
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      inactivityTimerRef.current = setTimeout(() => {
+        logout('Session expired after 5 minutes of inactivity. Please log in again.');
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    // Initial timer start
+    resetInactivityTimer();
+
+    // Event listeners to detect user activity
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart', 'mousedown'];
+    let lastCall = 0;
+    const throttledReset = () => {
+      const now = Date.now();
+      if (now - lastCall >= 1000) { // throttle to at most once per second
+        lastCall = now;
+        resetInactivityTimer();
+      }
+    };
+
+    activityEvents.forEach((evt) => {
+      window.addEventListener(evt, throttledReset, { passive: true });
+    });
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      activityEvents.forEach((evt) => {
+        window.removeEventListener(evt, throttledReset);
+      });
+    };
+  }, [token, user, logout]);
 
   useEffect(() => {
     async function fetchMe() {
@@ -56,6 +120,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
+    setSessionNotice('');
     const res = await fetch(`${API_BASE_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -75,6 +140,7 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (name, email, password) => {
+    setSessionNotice('');
     const res = await fetch(`${API_BASE_URL}/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,6 +188,7 @@ export function AuthProvider({ children }) {
   };
 
   const resetPasswordWithOTP = async (email, otp, newPassword) => {
+    setSessionNotice('');
     const res = await fetch(`${API_BASE_URL}/reset-password-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,12 +207,6 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('devspace-token');
-    setToken(null);
-    setUser(null);
-  };
-
   return (
     <AuthContext.Provider value={{
       user,
@@ -155,6 +216,8 @@ export function AuthProvider({ children }) {
       loading,
       isAuthModalOpen,
       authModalMode,
+      sessionNotice,
+      setSessionNotice,
       openAuthModal,
       closeAuthModal,
       setAuthModalMode,
@@ -177,3 +240,4 @@ export function useAuth() {
   }
   return context;
 }
+

@@ -730,31 +730,31 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
 
   return (
     <div className={`rounded-2xl bg-surface border border-border-main overflow-hidden flex flex-col shadow-2xl font-mono ${
-      isFullscreen ? 'fixed inset-4 z-50 rounded-xl' : 'w-full h-[680px]'
+      isFullscreen ? 'fixed inset-2 sm:inset-4 z-50 rounded-xl' : 'w-full h-[600px] sm:h-[680px]'
     }`}>
       
       {/* Editor Header Toolbar */}
-      <div className="px-4 py-3 bg-bg-deep border-b border-border-main flex flex-wrap items-center justify-between gap-3 select-none">
+      <div className="px-3 sm:px-4 py-2.5 bg-bg-deep border-b border-border-main flex flex-wrap items-center justify-between gap-2.5 select-none">
         
         {/* Left: Language & File Name */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-surface-elevated px-3 py-1.5 rounded-lg border border-border-main">
-            <FileCode className="w-4 h-4 text-brand-primary" />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-elevated px-2.5 py-1 sm:py-1.5 rounded-lg border border-border-main">
+            <FileCode className="w-4 h-4 text-brand-primary shrink-0" />
             <input
               type="text"
               value={fileName}
               onChange={(e) => handleFileNameChange(e.target.value)}
               placeholder="filename.ext"
-              className="bg-transparent text-xs text-text-primary font-bold focus:outline-none w-28 sm:w-36"
+              className="bg-transparent text-xs text-text-primary font-bold focus:outline-none w-24 sm:w-36"
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-brand-primary hidden sm:inline" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Layers className="w-4 h-4 text-brand-primary hidden sm:inline shrink-0" />
             <select
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value)}
-              className="bg-surface-elevated border border-border-main rounded-lg px-3 py-1.5 text-xs text-text-primary font-bold focus:outline-none focus:border-brand-primary cursor-pointer max-w-[180px] sm:max-w-xs"
+              className="bg-surface-elevated border border-border-main rounded-lg px-2.5 py-1 sm:py-1.5 text-xs text-text-primary font-bold focus:outline-none focus:border-brand-primary cursor-pointer max-w-[140px] sm:max-w-xs"
             >
               {LANGUAGES_LIST.map((langObj) => (
                 <option key={langObj.id} value={langObj.id}>
@@ -785,9 +785,9 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {savedSuccess && (
-            <span className="text-[11px] text-status-success font-semibold px-2 py-1 bg-status-success/10 rounded border border-status-success/30">
+            <span className="hidden sm:inline text-[11px] text-status-success font-semibold px-2 py-1 bg-status-success/10 rounded border border-status-success/30">
               {savedSuccess}
             </span>
           )}
@@ -795,10 +795,10 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
           <button
             onClick={handleRunCode}
             disabled={isRunning}
-            className="px-4 py-1.5 rounded-lg bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+            className="px-3 sm:px-4 py-1.5 rounded-lg bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {isRunning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-            <span>{isRunning ? 'Executing...' : 'Run Code'}</span>
+            <span className="text-[11px] sm:text-xs">{isRunning ? 'Executing...' : 'Run Code'}</span>
           </button>
 
           <button
@@ -847,12 +847,12 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         
         {/* Code Editor Body */}
-        <div className="flex-1 relative flex bg-surface overflow-hidden border-b lg:border-b-0 lg:border-r border-border-main">
+        <div className="flex-1 relative flex bg-surface overflow-hidden border-b lg:border-b-0 lg:border-r border-border-main min-h-[250px]">
           
           {/* Line Numbers Column */}
           <div
             ref={lineNumbersRef}
-            className="w-12 bg-bg-deep py-3 border-r border-border-subtle select-none overflow-hidden text-right pr-3 text-text-muted text-xs leading-6"
+            className="w-10 sm:w-12 bg-bg-deep py-3 border-r border-border-subtle select-none overflow-hidden text-right pr-2 sm:pr-3 text-text-muted text-xs leading-6 shrink-0"
           >
             {Array.from({ length: Math.max(lineCount, 1) }).map((_, i) => (
               <div key={i}>{i + 1}</div>
@@ -894,7 +894,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         </div>
 
         {/* Console / Output Panel */}
-        <div className="w-full lg:w-96 bg-bg-deep flex flex-col overflow-hidden">
+        <div className="w-full lg:w-96 h-52 sm:h-64 lg:h-full bg-bg-deep flex flex-col overflow-hidden shrink-0">
           
           {/* Output Header Tabs */}
           <div className="px-3 py-2 bg-surface-elevated border-b border-border-main flex items-center justify-between">
