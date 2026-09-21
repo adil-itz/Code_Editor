@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 const AuthContext = createContext();
 
 const API_BASE_URL = 'http://localhost:5000/api/auth';
-const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 5 minutes in milliseconds
+const SESSION_DURATION_MS = 5 * 60 * 1000;
+const WARNING_THRESHOLD_MS = 60 * 1000;
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('devspace-token') || null);
@@ -13,7 +14,12 @@ export function AuthProvider({ children }) {
   const [authModalMode, setAuthModalMode] = useState('login');
   const [sessionNotice, setSessionNotice] = useState('');
 
-  const inactivityTimerRef = useRef(null);
+  const [sessionExpiryTime, setSessionExpiryTime] = useState(() => {
+    const saved = localStorage.getItem('devspace-session-expiry');
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
+  const [sessionTimeRemaining, setSessionTimeRemaining] = useState(300);
 
   const openAuthModal = (mode = 'login', notice = '') => {
     setAuthModalMode(mode);
@@ -26,10 +32,17 @@ export function AuthProvider({ children }) {
     setSessionNotice('');
   };
 
+  const triggerAutoSave = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('devspace-auto-save-ide'));
+  }, []);
+
   const logout = useCallback((reason = '') => {
     localStorage.removeItem('devspace-token');
+    localStorage.removeItem('devspace-session-expiry');
     setToken(null);
     setUser(null);
+    setSessionExpiryTime(null);
+    setIsExpiryModalOpen(false);
     if (reason) {
       setSessionNotice(reason);
       setAuthModalMode('login');
@@ -37,52 +50,54 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // 5-Minute Inactivity Timer Management
+  const startNewSession = useCallback(() => {
+    const expiry = Date.now() + SESSION_DURATION_MS;
+    localStorage.setItem('devspace-session-expiry', expiry.toString());
+    setSessionExpiryTime(expiry);
+    setIsExpiryModalOpen(false);
+  }, []);
+
+  const extendSession = useCallback(() => {
+    const newExpiry = Date.now() + SESSION_DURATION_MS;
+    localStorage.setItem('devspace-session-expiry', newExpiry.toString());
+    setSessionExpiryTime(newExpiry);
+    setIsExpiryModalOpen(false);
+  }, []);
+
   useEffect(() => {
     if (!token || !user) {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-        inactivityTimerRef.current = null;
-      }
+      setIsExpiryModalOpen(false);
       return;
     }
 
-    const resetInactivityTimer = () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
+    if (!sessionExpiryTime) {
+      startNewSession();
+      return;
+    }
+
+    const checkInterval = setInterval(() => {
+      const remainingMs = sessionExpiryTime - Date.now();
+      const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+      setSessionTimeRemaining(remainingSec);
+
+      if (remainingMs <= WARNING_THRESHOLD_MS && remainingMs > 0) {
+        setIsExpiryModalOpen(prev => {
+          if (!prev) {
+            triggerAutoSave();
+          }
+          return true;
+        });
       }
-      inactivityTimerRef.current = setTimeout(() => {
-        logout('Session expired after 5 minutes of inactivity. Please log in again.');
-      }, INACTIVITY_TIMEOUT);
-    };
 
-    // Initial timer start
-    resetInactivityTimer();
-
-    // Event listeners to detect user activity
-    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart', 'mousedown'];
-    let lastCall = 0;
-    const throttledReset = () => {
-      const now = Date.now();
-      if (now - lastCall >= 1000) { // throttle to at most once per second
-        lastCall = now;
-        resetInactivityTimer();
+      if (remainingMs <= 0) {
+        clearInterval(checkInterval);
+        triggerAutoSave();
+        logout('Session expired after 5 minutes. Your IDE workspace changes have been automatically saved.');
       }
-    };
+    }, 1000);
 
-    activityEvents.forEach((evt) => {
-      window.addEventListener(evt, throttledReset, { passive: true });
-    });
-
-    return () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-      }
-      activityEvents.forEach((evt) => {
-        window.removeEventListener(evt, throttledReset);
-      });
-    };
-  }, [token, user, logout]);
+    return () => clearInterval(checkInterval);
+  }, [token, user, sessionExpiryTime, logout, startNewSession, triggerAutoSave]);
 
   useEffect(() => {
     async function fetchMe() {
@@ -102,13 +117,18 @@ export function AuthProvider({ children }) {
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
+          if (!localStorage.getItem('devspace-session-expiry')) {
+            startNewSession();
+          }
         } else {
           localStorage.removeItem('devspace-token');
+          localStorage.removeItem('devspace-session-expiry');
           setToken(null);
           setUser(null);
         }
       } catch (err) {
         localStorage.removeItem('devspace-token');
+        localStorage.removeItem('devspace-session-expiry');
         setToken(null);
         setUser(null);
       } finally {
@@ -117,7 +137,7 @@ export function AuthProvider({ children }) {
     }
 
     fetchMe();
-  }, [token]);
+  }, [token, startNewSession]);
 
   const login = async (email, password) => {
     setSessionNotice('');
@@ -135,6 +155,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('devspace-token', data.token);
     setToken(data.token);
     setUser(data.user);
+    startNewSession();
     closeAuthModal();
     return data;
   };
@@ -155,6 +176,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('devspace-token', data.token);
     setToken(data.token);
     setUser(data.user);
+    startNewSession();
     closeAuthModal();
     return data;
   };
@@ -203,6 +225,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('devspace-token', data.token);
     setToken(data.token);
     setUser(data.user);
+    startNewSession();
     closeAuthModal();
     return data;
   };
@@ -217,6 +240,10 @@ export function AuthProvider({ children }) {
       isAuthModalOpen,
       authModalMode,
       sessionNotice,
+      isExpiryModalOpen,
+      sessionTimeRemaining,
+      extendSession,
+      triggerAutoSave,
       setSessionNotice,
       openAuthModal,
       closeAuthModal,

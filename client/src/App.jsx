@@ -9,6 +9,7 @@ import { UserDashboard } from './pages/UserDashboard';
 import { EditorPage } from './pages/EditorPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AuthModal } from './components/auth/AuthModal';
+import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { WorkspaceHome } from './pages/WorkspaceHome';
 import { ProjectIDE } from './pages/ProjectIDE';
 
@@ -138,6 +139,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <AuthModal />
+            <SessionExpiryModal />
           </div>
         </BrowserRouter>
       </AuthProvider>

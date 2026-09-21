@@ -74,9 +74,12 @@ export function IDEHeader({
             onChange={(e) => onThemeChange(e.target.value)}
             className="bg-transparent text-[11px] font-bold text-text-primary focus:outline-none cursor-pointer"
           >
-            <option value="vs-dark" className="bg-[#171719] text-[#F5F5F5]">VS Dark</option>
-            <option value="vs-light" className="bg-[#171719] text-[#F5F5F5]">VS Light</option>
-            <option value="hc-black" className="bg-[#171719] text-[#F5F5F5]">High Contrast</option>
+            <option value="vs-dark" className="bg-surface-elevated text-text-primary">VS Dark</option>
+            <option value="vs-light" className="bg-surface-elevated text-text-primary">VS Light</option>
+            <option value="one-dark" className="bg-surface-elevated text-text-primary">One Dark Pro</option>
+            <option value="dracula" className="bg-surface-elevated text-text-primary">Dracula</option>
+            <option value="cyberpunk" className="bg-surface-elevated text-text-primary">Cyberpunk 2077</option>
+            <option value="hc-black" className="bg-surface-elevated text-text-primary">High Contrast</option>
           </select>
         </div>
 

@@ -31,6 +31,75 @@ export function CodeEditorContainer({ file, value, onChange, onSave, onOpenComma
 
   const language = file?.language ? (MONACO_LANG_MAP[file.language.toLowerCase()] || file.language.toLowerCase()) : 'javascript';
 
+  const handleBeforeMount = (monaco) => {
+    monaco.editor.defineTheme('one-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '5C6370', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'C678DD' },
+        { token: 'string', foreground: '98C379' },
+        { token: 'number', foreground: 'D19A66' },
+        { token: 'type', foreground: 'E5C07B' },
+        { token: 'function', foreground: '61AFEF' },
+        { token: 'variable', foreground: 'E06C75' }
+      ],
+      colors: {
+        'editor.background': '#21252B',
+        'editor.foreground': '#ABB2BF',
+        'editor.lineHighlightBackground': '#2C313A',
+        'editorCursor.foreground': '#528BFF',
+        'editorWhitespace.foreground': '#3B4048',
+        'editorIndentGuide.background': '#3B4048',
+        'editorIndentGuide.activeBackground': '#C678DD'
+      }
+    });
+
+    monaco.editor.defineTheme('dracula', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '6272A4', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'FF79C6' },
+        { token: 'string', foreground: 'F1FA8C' },
+        { token: 'number', foreground: 'BD93F9' },
+        { token: 'type', foreground: '8BE9FD' },
+        { token: 'function', foreground: '50FA7B' },
+        { token: 'variable', foreground: 'F8F8F2' }
+      ],
+      colors: {
+        'editor.background': '#21222C',
+        'editor.foreground': '#F8F8F2',
+        'editor.lineHighlightBackground': '#282A36',
+        'editorCursor.foreground': '#F8F8F2',
+        'editorWhitespace.foreground': '#44475A',
+        'editorIndentGuide.background': '#44475A'
+      }
+    });
+
+    monaco.editor.defineTheme('cyberpunk', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '7079A3', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'FF0055' },
+        { token: 'string', foreground: '00FF66' },
+        { token: 'number', foreground: 'FCEE09' },
+        { token: 'type', foreground: '00F0FF' },
+        { token: 'function', foreground: 'FCEE09' },
+        { token: 'variable', foreground: '00F0FF' }
+      ],
+      colors: {
+        'editor.background': '#0D0F18',
+        'editor.foreground': '#00F0FF',
+        'editor.lineHighlightBackground': '#1A1D30',
+        'editorCursor.foreground': '#FCEE09',
+        'editorWhitespace.foreground': '#22263F',
+        'editorIndentGuide.background': '#22263F'
+      }
+    });
+  };
+
   const handleEditorDidMount = (editor, monaco) => {
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       if (onSaveRef.current) onSaveRef.current();
@@ -40,13 +109,16 @@ export function CodeEditorContainer({ file, value, onChange, onSave, onOpenComma
     });
   };
 
+  const monacoThemeName = theme === 'vs-light' ? 'vs' : theme;
+
   return (
-    <div className="flex-1 relative bg-[#1e1e1e] flex overflow-hidden">
+    <div className="flex-1 relative bg-bg-primary flex overflow-hidden">
       <Editor
         height="100%"
         language={language}
         value={value || ''}
-        theme={theme}
+        theme={monacoThemeName}
+        beforeMount={handleBeforeMount}
         onChange={(val) => onChange(val || '')}
         onMount={handleEditorDidMount}
         options={{
@@ -64,7 +136,7 @@ export function CodeEditorContainer({ file, value, onChange, onSave, onOpenComma
           padding: { top: 12, bottom: 12 }
         }}
         loading={
-          <div className="h-full bg-[#1e1e1e] text-text-muted flex items-center justify-center font-mono text-xs">
+          <div className="h-full bg-bg-primary text-text-muted flex items-center justify-center font-mono text-xs">
             Loading VS Code Editor...
           </div>
         }
