@@ -21,6 +21,7 @@ import { OutputPanel } from '../components/ide/OutputPanel';
 import { InputPanel } from '../components/ide/InputPanel';
 import { PreviewPanel } from '../components/ide/PreviewPanel';
 import { CommandPalette } from '../components/ide/CommandPalette';
+import { ProblemsPanel } from '../components/ide/ProblemsPanel';
 import { Terminal, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
@@ -39,6 +40,9 @@ export function ProjectIDE() {
   const [fileContents, setFileContents] = useState({});
   const [dirtyFiles, setDirtyFiles] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+
+  const [diagnostics, setDiagnostics] = useState([]);
+  const [jumpToLine, setJumpToLine] = useState(null);
 
   const [bottomTab, setBottomTab] = useState('output');
   const [isBottomOpen, setIsBottomOpen] = useState(true);
@@ -732,6 +736,8 @@ export function ProjectIDE() {
               onChange={handleCodeChange}
               onSave={handleSaveActiveFile}
               onOpenCommandPalette={() => setIsPaletteOpen(true)}
+              onDiagnosticsChange={setDiagnostics}
+              jumpToLine={jumpToLine}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center font-mono text-text-muted space-y-3">
@@ -771,6 +777,15 @@ export function ProjectIDE() {
                   >
                     <Cpu className="w-3.5 h-3.5" />
                     <span>OUTPUT</span>
+                  </button>
+                  <button
+                    onClick={() => setBottomTab('problems')}
+                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                      bottomTab === 'problems' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    <AlertCircle className={`w-3.5 h-3.5 ${diagnostics.length > 0 ? 'text-status-error animate-pulse' : ''}`} />
+                    <span>PROBLEMS ({diagnostics.length})</span>
                   </button>
                   <button
                     onClick={() => setBottomTab('terminal')}
@@ -813,6 +828,15 @@ export function ProjectIDE() {
 
               <div className="flex-1 overflow-hidden">
                 {bottomTab === 'output' && <OutputPanel output={output} isRunning={isRunning} executionTime={executionTime} />}
+                {bottomTab === 'problems' && (
+                  <ProblemsPanel
+                    diagnostics={diagnostics}
+                    activeFile={activeFile}
+                    onSelectProblem={(diag) => {
+                      setJumpToLine({ line: diag.startLineNumber, column: diag.startColumn, timestamp: Date.now() });
+                    }}
+                  />
+                )}
                 {bottomTab === 'terminal' && <TerminalPanel project={project} activeFile={activeFile} files={files} onRunCode={handleRunCode} />}
                 {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
                 {bottomTab === 'preview' && <PreviewPanel htmlContent={htmlPreview} />}

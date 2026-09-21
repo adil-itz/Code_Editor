@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import { validateCodeSyntax } from '../../utils/syntaxChecker';
 
 const MONACO_LANG_MAP = {
   javascript: 'javascript',
@@ -20,7 +21,18 @@ const MONACO_LANG_MAP = {
   markdown: 'markdown'
 };
 
-export function CodeEditorContainer({ file, value, onChange, onSave, onOpenCommandPalette, theme = 'vs-dark' }) {
+export function CodeEditorContainer({ 
+  file, 
+  value, 
+  onChange, 
+  onSave, 
+  onOpenCommandPalette, 
+  theme = 'vs-dark',
+  onDiagnosticsChange,
+  jumpToLine 
+}) {
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
   const onSaveRef = useRef(onSave);
   const onPaletteRef = useRef(onOpenCommandPalette);
 
@@ -30,6 +42,33 @@ export function CodeEditorContainer({ file, value, onChange, onSave, onOpenComma
   }, [onSave, onOpenCommandPalette]);
 
   const language = file?.language ? (MONACO_LANG_MAP[file.language.toLowerCase()] || file.language.toLowerCase()) : 'javascript';
+
+  // 500ms Debounced Real-Time Syntax Validation
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+
+    const timer = setTimeout(() => {
+      const markers = validateCodeSyntax(value || '', language);
+      const model = editorRef.current.getModel();
+      if (model && monacoRef.current) {
+        monacoRef.current.editor.setModelMarkers(model, 'realtime-syntax', markers);
+      }
+      if (onDiagnosticsChange) {
+        onDiagnosticsChange(markers);
+      }
+    }, 500); // Exactly 500ms debounced delay
+
+    return () => clearTimeout(timer);
+  }, [value, language, onDiagnosticsChange]);
+
+  // Jump to specific error line when clicked from PROBLEMS panel
+  useEffect(() => {
+    if (jumpToLine && editorRef.current) {
+      editorRef.current.revealLineInCenter(jumpToLine.line);
+      editorRef.current.setPosition({ lineNumber: jumpToLine.line, column: jumpToLine.column || 1 });
+      editorRef.current.focus();
+    }
+  }, [jumpToLine]);
 
   const handleBeforeMount = (monaco) => {
     monaco.editor.defineTheme('one-dark', {
@@ -101,12 +140,25 @@ export function CodeEditorContainer({ file, value, onChange, onSave, onOpenComma
   };
 
   const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       if (onSaveRef.current) onSaveRef.current();
     });
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
       if (onPaletteRef.current) onPaletteRef.current();
     });
+
+    // Run initial syntax validation
+    const markers = validateCodeSyntax(value || '', language);
+    const model = editor.getModel();
+    if (model) {
+      monaco.editor.setModelMarkers(model, 'realtime-syntax', markers);
+    }
+    if (onDiagnosticsChange) {
+      onDiagnosticsChange(markers);
+    }
   };
 
   const monacoThemeName = theme === 'vs-light' ? 'vs' : theme;
