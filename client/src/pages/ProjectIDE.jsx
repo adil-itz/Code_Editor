@@ -44,7 +44,19 @@ export function ProjectIDE() {
   const [isBottomOpen, setIsBottomOpen] = useState(true);
   const [bottomHeight, setBottomHeight] = useState(240);
   const [isResizing, setIsResizing] = useState(false);
-  const [editorTheme, setEditorTheme] = useState('vs-dark');
+  const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('devspace-ide-theme') || 'vs-dark');
+
+  const handleThemeChange = (newTheme) => {
+    setEditorTheme(newTheme);
+    localStorage.setItem('devspace-ide-theme', newTheme);
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-ide-theme', editorTheme);
+    return () => {
+      document.documentElement.removeAttribute('data-ide-theme');
+    };
+  }, [editorTheme]);
 
   const [stdin, setStdin] = useState('');
   const [output, setOutput] = useState([]);
@@ -190,6 +202,38 @@ export function ProjectIDE() {
       setIsSaving(false);
     }
   };
+
+  const handleSaveAllDirtyFiles = async () => {
+    try {
+      setIsSaving(true);
+      const dirtyIds = Object.keys(dirtyFiles).filter(id => dirtyFiles[id]);
+      if (dirtyIds.length === 0 && activeFileId) {
+        const codeToSave = fileContents[activeFileId] ?? activeFile?.sourceCode ?? '';
+        await updateFileApi(activeFileId, { sourceCode: codeToSave });
+        setDirtyFiles(prev => ({ ...prev, [activeFileId]: false }));
+      } else {
+        for (const fId of dirtyIds) {
+          const content = fileContents[fId];
+          if (content !== undefined) {
+            await updateFileApi(fId, { sourceCode: content });
+          }
+        }
+        setDirtyFiles({});
+      }
+    } catch (err) {
+      console.error('Auto save error:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleAutoSaveEvent = () => {
+      handleSaveAllDirtyFiles();
+    };
+    window.addEventListener('devspace-auto-save-ide', handleAutoSaveEvent);
+    return () => window.removeEventListener('devspace-auto-save-ide', handleAutoSaveEvent);
+  }, [dirtyFiles, fileContents, activeFileId, activeFile]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
@@ -581,7 +625,7 @@ export function ProjectIDE() {
   }
 
   return (
-    <div className="h-screen bg-bg-primary text-text-primary flex flex-col overflow-hidden font-sans select-none">
+    <div data-ide-theme={editorTheme} className="h-screen bg-bg-primary text-text-primary flex flex-col overflow-hidden font-sans select-none">
       <IDEHeader
         project={project}
         activeFile={activeFile}
@@ -592,7 +636,7 @@ export function ProjectIDE() {
         onToggleBottomPanel={() => setIsBottomOpen(prev => !prev)}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         editorTheme={editorTheme}
-        onThemeChange={setEditorTheme}
+        onThemeChange={handleThemeChange}
         onSave={handleSaveActiveFile}
         onRun={handleRunCode}
         onOpenCommandPalette={() => setIsPaletteOpen(true)}
