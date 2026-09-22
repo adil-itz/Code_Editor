@@ -684,7 +684,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         setIsWaitingForInput(true);
         setInputPromptText(cleanPromptLabel || 'Program requires user input (stdin):');
 
-        const formattedLogs = formatInterleavedTerminalOutput(data.stdout, currentStdin, activePrompts);
+        const formattedLogs = formatInterleavedTerminalOutput(data.stdout, currentStdin, activePrompts, true);
         setOutput([{ type: 'log', text: formattedLogs }]);
         setActiveTab('console');
         setIsRunning(false);
@@ -695,7 +695,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
       setInputPromptText('');
 
       const logs = [];
-      const formattedStdout = formatInterleavedTerminalOutput(data.stdout, currentStdin, activePrompts);
+      const formattedStdout = formatInterleavedTerminalOutput(data.stdout, currentStdin, activePrompts, false);
       if (formattedStdout) {
         logs.push({ type: 'log', text: formattedStdout });
       }
