@@ -23,6 +23,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { tokenizeCode, getTokenColorClass } from '../../utils/syntaxHighlighter';
+import { isEofError, extractNewPrompt, buildTerminalOutput } from '../../utils/interactiveInput';
 
 const LANGUAGES_LIST = [
   { id: 'javascript', name: 'JavaScript', ext: 'js', category: 'Web / Scripting' },
@@ -474,6 +475,12 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
   const [savedSuccess, setSavedSuccess] = useState('');
   const [validationNotice, setValidationNotice] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [stdin, setStdin] = useState('');
+  const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  const [inputPromptText, setInputPromptText] = useState('');
+  const [promptsHistory, setPromptsHistory] = useState([]);
+  const [prevStdoutLength, setPrevStdoutLength] = useState(0);
+  const [interactiveInputVal, setInteractiveInputVal] = useState('');
 
   const [savedSnippets, setSavedSnippets] = useState(() => {
     try {
@@ -577,9 +584,22 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
     }
   };
 
-  const handleRunCode = async () => {
+  const handleRunCode = async (overrideStdin) => {
     if (isExtensionMismatch) {
       setValidationNotice(`Notice: Running code with language set to ${language.toUpperCase()} (File extension: .${currentExt})`);
+    }
+
+    const isInteractiveSubmission = typeof overrideStdin === 'string';
+    const currentStdin = isInteractiveSubmission ? overrideStdin : '';
+    const activePrompts = isInteractiveSubmission ? promptsHistory : [];
+    const currentPrevLength = isInteractiveSubmission ? prevStdoutLength : 0;
+
+    if (!isInteractiveSubmission) {
+      setStdin('');
+      setPromptsHistory([]);
+      setPrevStdoutLength(0);
+      setIsWaitingForInput(false);
+      setInputPromptText('');
     }
 
     setIsRunning(true);
@@ -609,6 +629,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         setActiveTab('preview');
         setOutput([{ type: 'log', text: `${language.toUpperCase()} rendered in Live Web Preview.` }]);
         setIsRunning(false);
+        setIsWaitingForInput(false);
         return;
       }
 
@@ -621,6 +642,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         }
         setActiveTab('console');
         setIsRunning(false);
+        setIsWaitingForInput(false);
         return;
       }
 
@@ -631,14 +653,18 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
 
       const timezonePreparedCode = prepareCodeWithTimezone(code, lowerLang, new Date().getTimezoneOffset());
 
-      // Call Real Online Compiler API
+      const payload = {
+        source_code: timezonePreparedCode,
+        language_id: langId
+      };
+      if (currentStdin) {
+        payload.stdin = currentStdin;
+      }
+
       const res = await fetch('https://ce.judge0.com/submissions?wait=true', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_code: timezonePreparedCode,
-          language_id: langId
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -650,9 +676,36 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
       const cpuTimeMs = data.time ? (parseFloat(data.time) * 1000) : (endTime - startTime);
       setExecutionTime(cpuTimeMs.toFixed(1));
 
+      if (isEofError(data.stderr, data.stdout, code)) {
+        const newPrompt = extractNewPrompt(data.stdout, currentPrevLength);
+        const updatedPrompts = [...activePrompts, newPrompt];
+        setPromptsHistory(updatedPrompts);
+        setPrevStdoutLength(data.stdout ? data.stdout.length : 0);
+        setIsWaitingForInput(true);
+
+        const cleanPromptLabel = newPrompt.trim();
+        setInputPromptText(cleanPromptLabel || 'Program requires user input (stdin):');
+
+        const logs = [];
+        const interleavedSoFar = buildTerminalOutput(data.stdout, currentStdin, updatedPrompts);
+        if (interleavedSoFar) {
+          logs.push({ type: 'log', text: interleavedSoFar });
+        } else {
+          logs.push({ type: 'log', text: 'Program waiting for user input...' });
+        }
+        setOutput(logs);
+        setActiveTab('console');
+        setIsRunning(false);
+        return;
+      }
+
+      setIsWaitingForInput(false);
+      setInputPromptText('');
+
       const logs = [];
-      if (data.stdout) {
-        logs.push({ type: 'log', text: data.stdout });
+      const formattedStdout = buildTerminalOutput(data.stdout, currentStdin, activePrompts);
+      if (formattedStdout) {
+        logs.push({ type: 'log', text: formattedStdout });
       }
       if (data.stderr) {
         logs.push({ type: 'error', text: data.stderr });
@@ -669,14 +722,25 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
 
       setOutput(logs);
       setActiveTab('console');
+      setPromptsHistory([]);
+      setPrevStdoutLength(0);
     } catch (err) {
-      // Fallback runner
       const dynamicLogs = executeDynamicCode(code, language);
       setOutput(dynamicLogs);
       setActiveTab('console');
+      setIsWaitingForInput(false);
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const handleSubmitInteractiveInput = async (e) => {
+    e.preventDefault();
+    if (!interactiveInputVal) return;
+    const newStdin = stdin ? (stdin.endsWith('\n') ? `${stdin}${interactiveInputVal}\n` : `${stdin}\n${interactiveInputVal}\n`) : `${interactiveInputVal}\n`;
+    setStdin(newStdin);
+    setInteractiveInputVal('');
+    await handleRunCode(newStdin);
   };
 
   // Save Snippet
@@ -972,6 +1036,38 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
                       <pre className="whitespace-pre-wrap font-mono">{out.text}</pre>
                     </div>
                   ))
+                )}
+
+                {isWaitingForInput && (
+                  <form onSubmit={handleSubmitInteractiveInput} className="mt-3 p-3 rounded-xl border border-brand-primary/50 bg-brand-primary/10 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-brand-primary font-bold text-[11px] uppercase tracking-wider">
+                      <TerminalIcon className="w-4 h-4 animate-pulse" />
+                      <span>Program Waiting For User Input</span>
+                    </div>
+
+                    {inputPromptText && (
+                      <div className="text-text-primary font-semibold bg-bg-deep/70 px-3 py-1.5 rounded border border-border-main text-xs">
+                        {inputPromptText}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={interactiveInputVal}
+                        onChange={(e) => setInteractiveInputVal(e.target.value)}
+                        placeholder="Type input value and press Enter..."
+                        className="flex-1 bg-surface border border-border-main rounded-lg px-3 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand-primary font-mono text-xs"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 rounded-lg bg-brand-primary text-bg-deep font-bold text-xs cursor-pointer hover:bg-brand-hover transition-colors shrink-0"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </form>
                 )}
               </div>
             )}

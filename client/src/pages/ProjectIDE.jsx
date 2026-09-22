@@ -10,6 +10,7 @@ import {
   deleteFolderApi,
   executeCodeApi
 } from '../services/projectService';
+import { isEofError, extractNewPrompt, buildTerminalOutput } from '../utils/interactiveInput';
 import { IDEHeader } from '../components/ide/IDEHeader';
 import { ActivityBar } from '../components/ide/ActivityBar';
 import { Explorer } from '../components/ide/Explorer';
@@ -67,6 +68,10 @@ export function ProjectIDE() {
   const [isRunning, setIsRunning] = useState(false);
   const [executionTime, setExecutionTime] = useState(null);
   const [htmlPreview, setHtmlPreview] = useState('');
+  const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  const [inputPromptText, setInputPromptText] = useState('');
+  const [promptsHistory, setPromptsHistory] = useState([]);
+  const [prevStdoutLength, setPrevStdoutLength] = useState(0);
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -563,12 +568,27 @@ export function ProjectIDE() {
     return (file.language || 'python').toLowerCase();
   };
 
-  const handleRunCode = async () => {
+  const handleRunCode = async (overrideStdin) => {
     if (!activeFile) return;
+
+    const isInteractiveSubmission = typeof overrideStdin === 'string';
+    const currentStdin = isInteractiveSubmission ? overrideStdin : (bottomTab === 'input' ? stdin : '');
+    const activePrompts = isInteractiveSubmission ? promptsHistory : [];
+    const currentPrevLength = isInteractiveSubmission ? prevStdoutLength : 0;
+
+    if (!isInteractiveSubmission) {
+      setStdin(bottomTab === 'input' ? stdin : '');
+      setPromptsHistory([]);
+      setPrevStdoutLength(0);
+      setIsWaitingForInput(false);
+      setInputPromptText('');
+    }
+
     setIsRunning(true);
     setIsBottomOpen(true);
-    setBottomTab('output');
-    setOutput([]);
+    if (bottomTab !== 'terminal') {
+      setBottomTab('output');
+    }
 
     const startTime = performance.now();
     try {
@@ -581,6 +601,7 @@ export function ProjectIDE() {
         setBottomTab('preview');
         setOutput([{ type: 'log', text: 'Rendered live preview with connected CSS and JS files.' }]);
         setIsRunning(false);
+        setIsWaitingForInput(false);
         return;
       }
 
@@ -589,7 +610,7 @@ export function ProjectIDE() {
       const res = await executeCodeApi({
         code: codeToSubmit,
         language: targetLang,
-        stdin,
+        stdin: currentStdin,
         projectId,
         fileId: activeFileId
       });
@@ -597,18 +618,53 @@ export function ProjectIDE() {
       const endTime = performance.now();
       setExecutionTime((endTime - startTime).toFixed(1));
 
+      if (isEofError(res.stderr, res.stdout, currentCode)) {
+        const newPrompt = extractNewPrompt(res.stdout, currentPrevLength);
+        const updatedPrompts = [...activePrompts, newPrompt];
+        setPromptsHistory(updatedPrompts);
+        setPrevStdoutLength(res.stdout ? res.stdout.length : 0);
+        setIsWaitingForInput(true);
+
+        const cleanPromptLabel = newPrompt.trim();
+        setInputPromptText(cleanPromptLabel || 'Program is waiting for input (stdin):');
+
+        const logs = [];
+        const interleavedSoFar = buildTerminalOutput(res.stdout, currentStdin, updatedPrompts);
+        if (interleavedSoFar) {
+          logs.push({ type: 'log', text: interleavedSoFar });
+        } else {
+          logs.push({ type: 'log', text: 'Program waiting for user input...' });
+        }
+        setOutput(logs);
+        setIsRunning(false);
+        return;
+      }
+
+      setIsWaitingForInput(false);
+      setInputPromptText('');
+
       const logs = [];
-      if (res.stdout) logs.push({ type: 'log', text: res.stdout });
+      const formattedStdout = buildTerminalOutput(res.stdout, currentStdin, activePrompts);
+      if (formattedStdout) logs.push({ type: 'log', text: formattedStdout });
       if (res.stderr) logs.push({ type: 'error', text: res.stderr });
       if (res.compile_output) logs.push({ type: 'error', text: res.compile_output });
       if (logs.length === 0) logs.push({ type: 'log', text: `Execution status: ${res.status || 'Accepted'}` });
 
       setOutput(logs);
+      setPromptsHistory([]);
+      setPrevStdoutLength(0);
     } catch (err) {
       setOutput([{ type: 'error', text: err.message || 'Execution error.' }]);
+      setIsWaitingForInput(false);
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const handleSubmitInteractiveInput = async (inputValue) => {
+    const newStdin = stdin ? (stdin.endsWith('\n') ? `${stdin}${inputValue}\n` : `${stdin}\n${inputValue}\n`) : `${inputValue}\n`;
+    setStdin(newStdin);
+    await handleRunCode(newStdin);
   };
 
   const handlePaletteAction = (actionId) => {
@@ -827,7 +883,16 @@ export function ProjectIDE() {
               </div>
 
               <div className="flex-1 overflow-hidden">
-                {bottomTab === 'output' && <OutputPanel output={output} isRunning={isRunning} executionTime={executionTime} />}
+                {bottomTab === 'output' && (
+                  <OutputPanel 
+                    output={output} 
+                    isRunning={isRunning} 
+                    executionTime={executionTime} 
+                    isWaitingForInput={isWaitingForInput}
+                    inputPromptText={inputPromptText}
+                    onSubmitInput={handleSubmitInteractiveInput}
+                  />
+                )}
                 {bottomTab === 'problems' && (
                   <ProblemsPanel
                     diagnostics={diagnostics}
@@ -837,7 +902,17 @@ export function ProjectIDE() {
                     }}
                   />
                 )}
-                {bottomTab === 'terminal' && <TerminalPanel project={project} activeFile={activeFile} files={files} onRunCode={handleRunCode} />}
+                {bottomTab === 'terminal' && (
+                  <TerminalPanel 
+                    project={project} 
+                    activeFile={activeFile} 
+                    files={files} 
+                    onRunCode={handleRunCode}
+                    isWaitingForInput={isWaitingForInput}
+                    inputPromptText={inputPromptText}
+                    onSubmitInput={handleSubmitInteractiveInput}
+                  />
+                )}
                 {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
                 {bottomTab === 'preview' && <PreviewPanel htmlContent={htmlPreview} />}
               </div>
