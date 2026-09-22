@@ -23,7 +23,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { tokenizeCode, getTokenColorClass } from '../../utils/syntaxHighlighter';
-import { isEofError, extractNewPrompt, buildTerminalOutput } from '../../utils/interactiveInput';
+import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedTerminalOutput } from '../../utils/interactiveInput';
 
 const LANGUAGES_LIST = [
   { id: 'javascript', name: 'JavaScript', ext: 'js', category: 'Web / Scripting' },
@@ -584,20 +584,18 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
     }
   };
 
-  const handleRunCode = async (overrideStdin) => {
+  const handleRunCode = async (overrideStdin, customPrompts) => {
     if (isExtensionMismatch) {
       setValidationNotice(`Notice: Running code with language set to ${language.toUpperCase()} (File extension: .${currentExt})`);
     }
 
     const isInteractiveSubmission = typeof overrideStdin === 'string';
     const currentStdin = isInteractiveSubmission ? overrideStdin : '';
-    const activePrompts = isInteractiveSubmission ? promptsHistory : [];
-    const currentPrevLength = isInteractiveSubmission ? prevStdoutLength : 0;
+    const activePrompts = isInteractiveSubmission ? (customPrompts || promptsHistory) : [];
 
     if (!isInteractiveSubmission) {
       setStdin('');
       setPromptsHistory([]);
-      setPrevStdoutLength(0);
       setIsWaitingForInput(false);
       setInputPromptText('');
     }
@@ -676,24 +674,18 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
       const cpuTimeMs = data.time ? (parseFloat(data.time) * 1000) : (endTime - startTime);
       setExecutionTime(cpuTimeMs.toFixed(1));
 
-      if (isEofError(data.stderr, data.stdout, code)) {
-        const newPrompt = extractNewPrompt(data.stdout, currentPrevLength);
-        const updatedPrompts = [...activePrompts, newPrompt];
-        setPromptsHistory(updatedPrompts);
-        setPrevStdoutLength(data.stdout ? data.stdout.length : 0);
-        setIsWaitingForInput(true);
+      if (isInputNeeded(code, language, currentStdin, data.stderr, data.stdout)) {
+        const extractedPrompts = extractPromptsFromStdout(data.stdout);
+        const currentInputCount = currentStdin ? currentStdin.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || arr[idx] !== '').length : 0;
+        
+        const nextPrompt = extractedPrompts[currentInputCount] || extractedPrompts[extractedPrompts.length - 1] || 'Program requires user input (stdin):';
+        const cleanPromptLabel = typeof nextPrompt === 'string' ? nextPrompt.trim() : 'Program requires user input (stdin):';
 
-        const cleanPromptLabel = newPrompt.trim();
+        setIsWaitingForInput(true);
         setInputPromptText(cleanPromptLabel || 'Program requires user input (stdin):');
 
-        const logs = [];
-        const interleavedSoFar = buildTerminalOutput(data.stdout, currentStdin, updatedPrompts);
-        if (interleavedSoFar) {
-          logs.push({ type: 'log', text: interleavedSoFar });
-        } else {
-          logs.push({ type: 'log', text: 'Program waiting for user input...' });
-        }
-        setOutput(logs);
+        const formattedLogs = formatInterleavedTerminalOutput(data.stdout, currentStdin, activePrompts);
+        setOutput([{ type: 'log', text: formattedLogs }]);
         setActiveTab('console');
         setIsRunning(false);
         return;
@@ -703,7 +695,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
       setInputPromptText('');
 
       const logs = [];
-      const formattedStdout = buildTerminalOutput(data.stdout, currentStdin, activePrompts);
+      const formattedStdout = formatInterleavedTerminalOutput(data.stdout, currentStdin, activePrompts);
       if (formattedStdout) {
         logs.push({ type: 'log', text: formattedStdout });
       }
@@ -722,8 +714,6 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
 
       setOutput(logs);
       setActiveTab('console');
-      setPromptsHistory([]);
-      setPrevStdoutLength(0);
     } catch (err) {
       const dynamicLogs = executeDynamicCode(code, language);
       setOutput(dynamicLogs);
@@ -739,8 +729,12 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
     if (!interactiveInputVal) return;
     const newStdin = stdin ? (stdin.endsWith('\n') ? `${stdin}${interactiveInputVal}\n` : `${stdin}\n${interactiveInputVal}\n`) : `${interactiveInputVal}\n`;
     setStdin(newStdin);
+
+    const updatedPrompts = [...promptsHistory, inputPromptText || 'Enter input:'];
+    setPromptsHistory(updatedPrompts);
+
     setInteractiveInputVal('');
-    await handleRunCode(newStdin);
+    await handleRunCode(newStdin, updatedPrompts);
   };
 
   // Save Snippet

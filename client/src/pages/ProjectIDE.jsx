@@ -10,7 +10,7 @@ import {
   deleteFolderApi,
   executeCodeApi
 } from '../services/projectService';
-import { isEofError, extractNewPrompt, buildTerminalOutput } from '../utils/interactiveInput';
+import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedTerminalOutput } from '../utils/interactiveInput';
 import { IDEHeader } from '../components/ide/IDEHeader';
 import { ActivityBar } from '../components/ide/ActivityBar';
 import { Explorer } from '../components/ide/Explorer';
@@ -568,18 +568,16 @@ export function ProjectIDE() {
     return (file.language || 'python').toLowerCase();
   };
 
-  const handleRunCode = async (overrideStdin) => {
+  const handleRunCode = async (overrideStdin, customPrompts) => {
     if (!activeFile) return;
 
     const isInteractiveSubmission = typeof overrideStdin === 'string';
     const currentStdin = isInteractiveSubmission ? overrideStdin : (bottomTab === 'input' ? stdin : '');
-    const activePrompts = isInteractiveSubmission ? promptsHistory : [];
-    const currentPrevLength = isInteractiveSubmission ? prevStdoutLength : 0;
+    const activePrompts = isInteractiveSubmission ? (customPrompts || promptsHistory) : [];
 
     if (!isInteractiveSubmission) {
       setStdin(bottomTab === 'input' ? stdin : '');
       setPromptsHistory([]);
-      setPrevStdoutLength(0);
       setIsWaitingForInput(false);
       setInputPromptText('');
     }
@@ -618,24 +616,18 @@ export function ProjectIDE() {
       const endTime = performance.now();
       setExecutionTime((endTime - startTime).toFixed(1));
 
-      if (isEofError(res.stderr, res.stdout, currentCode)) {
-        const newPrompt = extractNewPrompt(res.stdout, currentPrevLength);
-        const updatedPrompts = [...activePrompts, newPrompt];
-        setPromptsHistory(updatedPrompts);
-        setPrevStdoutLength(res.stdout ? res.stdout.length : 0);
-        setIsWaitingForInput(true);
+      if (isInputNeeded(currentCode, targetLang, currentStdin, res.stderr, res.stdout)) {
+        const extractedPrompts = extractPromptsFromStdout(res.stdout);
+        const currentInputCount = currentStdin ? currentStdin.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || arr[idx] !== '').length : 0;
+        
+        const nextPrompt = extractedPrompts[currentInputCount] || extractedPrompts[extractedPrompts.length - 1] || 'Program is waiting for input (stdin):';
+        const cleanPromptLabel = typeof nextPrompt === 'string' ? nextPrompt.trim() : 'Program is waiting for input (stdin):';
 
-        const cleanPromptLabel = newPrompt.trim();
+        setIsWaitingForInput(true);
         setInputPromptText(cleanPromptLabel || 'Program is waiting for input (stdin):');
 
-        const logs = [];
-        const interleavedSoFar = buildTerminalOutput(res.stdout, currentStdin, updatedPrompts);
-        if (interleavedSoFar) {
-          logs.push({ type: 'log', text: interleavedSoFar });
-        } else {
-          logs.push({ type: 'log', text: 'Program waiting for user input...' });
-        }
-        setOutput(logs);
+        const formattedLogs = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts);
+        setOutput([{ type: 'log', text: formattedLogs }]);
         setIsRunning(false);
         return;
       }
@@ -644,15 +636,13 @@ export function ProjectIDE() {
       setInputPromptText('');
 
       const logs = [];
-      const formattedStdout = buildTerminalOutput(res.stdout, currentStdin, activePrompts);
+      const formattedStdout = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts);
       if (formattedStdout) logs.push({ type: 'log', text: formattedStdout });
       if (res.stderr) logs.push({ type: 'error', text: res.stderr });
       if (res.compile_output) logs.push({ type: 'error', text: res.compile_output });
       if (logs.length === 0) logs.push({ type: 'log', text: `Execution status: ${res.status || 'Accepted'}` });
 
       setOutput(logs);
-      setPromptsHistory([]);
-      setPrevStdoutLength(0);
     } catch (err) {
       setOutput([{ type: 'error', text: err.message || 'Execution error.' }]);
       setIsWaitingForInput(false);
@@ -664,7 +654,11 @@ export function ProjectIDE() {
   const handleSubmitInteractiveInput = async (inputValue) => {
     const newStdin = stdin ? (stdin.endsWith('\n') ? `${stdin}${inputValue}\n` : `${stdin}\n${inputValue}\n`) : `${inputValue}\n`;
     setStdin(newStdin);
-    await handleRunCode(newStdin);
+
+    const updatedPrompts = [...promptsHistory, inputPromptText || 'Enter input:'];
+    setPromptsHistory(updatedPrompts);
+
+    await handleRunCode(newStdin, updatedPrompts);
   };
 
   const handlePaletteAction = (actionId) => {
