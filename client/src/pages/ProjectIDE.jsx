@@ -899,6 +899,7 @@ export function ProjectIDE() {
                         isWaitingForInput={isWaitingForInput}
                         inputPromptText={inputPromptText}
                         onSubmitInput={handleSubmitInteractiveInput}
+                        output={output}
                       />
                     )}
                     {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
