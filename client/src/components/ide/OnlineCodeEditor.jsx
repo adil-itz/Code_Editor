@@ -674,7 +674,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
       const cpuTimeMs = data.time ? (parseFloat(data.time) * 1000) : (endTime - startTime);
       setExecutionTime(cpuTimeMs.toFixed(1));
 
-      if (isInputNeeded(code, language, currentStdin, data.stderr, data.stdout)) {
+      if (isInputNeeded(code, language, currentStdin, data.stderr, data.stdout, data.compile_output, data.status)) {
         const extractedPrompts = extractPromptsFromStdout(data.stdout);
         const currentInputCount = currentStdin ? currentStdin.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || arr[idx] !== '').length : 0;
         

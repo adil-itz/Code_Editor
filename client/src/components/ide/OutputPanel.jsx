@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Cpu, Clock, CheckCircle2, RefreshCw, CornerDownLeft, Terminal as TerminalIcon } from 'lucide-react';
+import { Cpu, Clock, CheckCircle2, XCircle, RefreshCw, CornerDownLeft, Terminal as TerminalIcon } from 'lucide-react';
 
 export function OutputPanel({ 
   output, 
   isRunning, 
   executionTime, 
+  executionStatus,
   isWaitingForInput = false, 
   inputPromptText = '', 
   onSubmitInput 
@@ -51,6 +52,10 @@ export function OutputPanel({
     );
   }
 
+  const hasError = output?.some(item => item.type === 'error');
+  const statusText = executionStatus || (hasError ? 'Compilation / Runtime Error' : 'Accepted');
+  const isErrorStatus = hasError || (statusText.toLowerCase().includes('error'));
+
   return (
     <div ref={containerRef} className="h-full bg-bg-deep p-4 font-mono text-xs overflow-y-auto space-y-3 select-text">
       {executionTime && (
@@ -59,9 +64,9 @@ export function OutputPanel({
             <Clock className="w-3.5 h-3.5 text-brand-primary" />
             <span>Time: {executionTime} ms</span>
           </span>
-          <span className="flex items-center gap-1 text-status-success">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Status: Accepted</span>
+          <span className={`flex items-center gap-1 font-semibold ${isErrorStatus ? 'text-status-error' : 'text-status-success'}`}>
+            {isErrorStatus ? <XCircle className="w-3.5 h-3.5 text-status-error" /> : <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />}
+            <span>Status: {statusText}</span>
           </span>
         </div>
       )}

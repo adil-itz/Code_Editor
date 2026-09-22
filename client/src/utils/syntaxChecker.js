@@ -87,6 +87,50 @@ export function validateCodeSyntax(code, language = 'javascript') {
     });
   }
 
+  if (['c', 'cpp', 'cc', 'cxx', 'java', 'csharp', 'cs', 'php', 'rust'].includes(lang)) {
+    const lines = code.split('\n');
+    const controlKeywords = [
+      'if', 'else', 'for', 'while', 'switch', 'case', 'default', 'try', 'catch', 'finally',
+      'do', 'struct', 'class', 'enum', 'namespace', 'using', 'import', 'package',
+      'public', 'private', 'protected'
+    ];
+
+    lines.forEach((lineText, idx) => {
+      const lineNum = idx + 1;
+      let cleanLine = lineText;
+      const commentIdx = cleanLine.indexOf('//');
+      if (commentIdx !== -1) {
+        cleanLine = cleanLine.slice(0, commentIdx);
+      }
+      const trimmed = cleanLine.trim();
+      if (!trimmed) return;
+
+      if (trimmed.startsWith('#')) return;
+      if (trimmed.endsWith('{') || trimmed.endsWith('}') || trimmed.endsWith(':') || trimmed.endsWith(';')) return;
+      if (/[\+\-\*\/\=\&\|\,\<\>\.]$/.test(trimmed)) return;
+
+      const firstWord = trimmed.split(/[\s\(\<]/)[0];
+      if (controlKeywords.includes(firstWord)) return;
+
+      let nextLineIndex = idx + 1;
+      while (nextLineIndex < lines.length && !lines[nextLineIndex].trim()) {
+        nextLineIndex++;
+      }
+      if (nextLineIndex < lines.length && lines[nextLineIndex].trim().startsWith('{')) {
+        return;
+      }
+
+      markers.push({
+        startLineNumber: lineNum,
+        startColumn: Math.max(1, lineText.indexOf(trimmed) + 1),
+        endLineNumber: lineNum,
+        endColumn: lineText.length + 1,
+        message: `Syntax Error: Missing semicolon ';' at end of statement`,
+        severity: 8
+      });
+    });
+  }
+
   if (lang === 'html' || lang === 'htm') {
     const lines = code.split('\n');
     const tagStack = [];

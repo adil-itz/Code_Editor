@@ -41,7 +41,36 @@ export function CodeEditorContainer({
     onPaletteRef.current = onOpenCommandPalette;
   }, [onSave, onOpenCommandPalette]);
 
-  const language = file?.language ? (MONACO_LANG_MAP[file.language.toLowerCase()] || file.language.toLowerCase()) : 'javascript';
+  const getLanguage = () => {
+    if (file?.language && MONACO_LANG_MAP[file.language.toLowerCase()]) {
+      return MONACO_LANG_MAP[file.language.toLowerCase()];
+    }
+    if (file?.name) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const extMap = {
+        c: 'c', h: 'c',
+        cpp: 'cpp', hpp: 'cpp', cc: 'cpp', cxx: 'cpp',
+        py: 'python',
+        js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
+        ts: 'typescript', tsx: 'typescript',
+        html: 'html', htm: 'html',
+        css: 'css', scss: 'css',
+        java: 'java',
+        cs: 'csharp',
+        php: 'php',
+        rb: 'ruby',
+        go: 'go',
+        rs: 'rust',
+        sql: 'sql',
+        json: 'json',
+        md: 'markdown'
+      };
+      if (extMap[ext]) return extMap[ext];
+    }
+    return 'javascript';
+  };
+
+  const language = getLanguage();
 
   // 500ms Debounced Real-Time Syntax Validation
   useEffect(() => {
@@ -164,7 +193,7 @@ export function CodeEditorContainer({
   const monacoThemeName = theme === 'vs-light' ? 'vs' : theme;
 
   return (
-    <div className="flex-1 relative bg-bg-primary flex overflow-hidden">
+    <div className="w-full h-full relative bg-bg-primary flex flex-col overflow-hidden">
       <Editor
         height="100%"
         language={language}

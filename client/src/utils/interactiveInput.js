@@ -74,7 +74,26 @@ export function extractPromptsFromStdout(stdout) {
   return lines;
 }
 
-export function isInputNeeded(code, language, currentStdin, stderr, stdout) {
+export function isInputNeeded(code, language, currentStdin, stderr, stdout, compileOutput = '', status = null) {
+  if (compileOutput && typeof compileOutput === 'string' && compileOutput.trim()) {
+    return false;
+  }
+
+  const statusDesc = typeof status === 'string' ? status : (status?.description || '');
+  const statusId = typeof status === 'object' ? status?.id : null;
+  if (statusDesc.toLowerCase().includes('compilation error') || statusId === 6) {
+    return false;
+  }
+
+  if (stderr && typeof stderr === 'string') {
+    const errLower = stderr.toLowerCase();
+    if (errLower.includes('error:') || errLower.includes('syntaxerror:') || errLower.includes('fatal error:')) {
+      if (!isEofError(stderr, stdout, code)) {
+        return false;
+      }
+    }
+  }
+
   if (isEofError(stderr, stdout, code)) return true;
 
   const totalRequired = countRequiredInputs(code, language);

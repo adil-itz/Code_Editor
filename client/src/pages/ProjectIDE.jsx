@@ -23,7 +23,8 @@ import { InputPanel } from '../components/ide/InputPanel';
 import { PreviewPanel } from '../components/ide/PreviewPanel';
 import { CommandPalette } from '../components/ide/CommandPalette';
 import { ProblemsPanel } from '../components/ide/ProblemsPanel';
-import { Terminal, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
+import { StatusBar } from '../components/ide/StatusBar';
+import { Terminal, Terminal as TerminalIcon, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
   const { projectId } = useParams();
@@ -67,6 +68,7 @@ export function ProjectIDE() {
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [executionTime, setExecutionTime] = useState(null);
+  const [executionStatus, setExecutionStatus] = useState('Accepted');
   const [htmlPreview, setHtmlPreview] = useState('');
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPromptText, setInputPromptText] = useState('');
@@ -160,12 +162,26 @@ export function ProjectIDE() {
   const currentCode = activeFileId ? (fileContents[activeFileId] ?? activeFile?.sourceCode ?? '') : '';
   const isCurrentDirty = activeFileId ? !!dirtyFiles[activeFileId] : false;
 
-  const handleOpenFile = (file) => {
-    const fId = file.id || file._id;
-    if (!openFiles.some(f => (f.id || f._id) === fId)) {
-      setOpenFiles(prev => [...prev, file]);
+  const handleOpenFile = (fileOrId) => {
+    if (!fileOrId) return;
+
+    let targetFile = null;
+    let fId = null;
+
+    if (typeof fileOrId === 'string') {
+      fId = fileOrId;
+      targetFile = files.find(f => (f.id || f._id) === fId || f.name === fId);
+    } else {
+      fId = fileOrId.id || fileOrId._id || fileOrId.name;
+      targetFile = fileOrId;
     }
-    setActiveFileId(fId);
+
+    if (targetFile && !openFiles.some(f => (f.id || f._id) === (targetFile.id || targetFile._id))) {
+      setOpenFiles(prev => [...prev, targetFile]);
+    }
+
+    const finalId = targetFile ? (targetFile.id || targetFile._id) : fId;
+    setActiveFileId(finalId);
   };
 
   const handleCloseTab = (fId) => {
@@ -616,7 +632,7 @@ export function ProjectIDE() {
       const endTime = performance.now();
       setExecutionTime((endTime - startTime).toFixed(1));
 
-      if (isInputNeeded(currentCode, targetLang, currentStdin, res.stderr, res.stdout)) {
+      if (isInputNeeded(currentCode, targetLang, currentStdin, res.stderr, res.stdout, res.compile_output, res.status)) {
         const extractedPrompts = extractPromptsFromStdout(res.stdout);
         const currentInputCount = currentStdin ? currentStdin.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || arr[idx] !== '').length : 0;
         
@@ -635,6 +651,15 @@ export function ProjectIDE() {
       setIsWaitingForInput(false);
       setInputPromptText('');
 
+      if (res.compile_output || (res.status && String(res.status).toLowerCase().includes('compilation error'))) {
+        setExecutionStatus('Compilation Error');
+      } else if (res.stderr) {
+        setExecutionStatus('Runtime Error');
+      } else {
+        const statusVal = typeof res.status === 'string' ? res.status : (res.status?.description || 'Accepted');
+        setExecutionStatus(statusVal);
+      }
+
       const logs = [];
       const formattedStdout = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts, false);
       if (formattedStdout) logs.push({ type: 'log', text: formattedStdout });
@@ -644,6 +669,7 @@ export function ProjectIDE() {
 
       setOutput(logs);
     } catch (err) {
+      setExecutionStatus('Error');
       setOutput([{ type: 'error', text: err.message || 'Execution error.' }]);
       setIsWaitingForInput(false);
     } finally {
@@ -679,9 +705,9 @@ export function ProjectIDE() {
   }
 
   return (
-    <div data-ide-theme={editorTheme} className="h-screen bg-bg-primary text-text-primary flex flex-col overflow-hidden font-sans select-none">
-      <IDEHeader
-        project={project}
+    <div className="h-screen w-screen flex flex-col bg-bg-primary text-text-primary overflow-hidden font-sans select-none">
+      <IDEHeader 
+        project={project} 
         activeFile={activeFile}
         isDirty={isCurrentDirty}
         isSaving={isSaving}
@@ -697,14 +723,15 @@ export function ProjectIDE() {
       />
 
       <div className="flex-1 flex overflow-hidden relative">
-        <div className="hidden md:flex shrink-0">
-          <ActivityBar
-            activeTab={activeActivityTab}
-            onTabChange={(tab) => setActiveActivityTab(tab)}
-          />
+        <ActivityBar 
+          activeTab={activeActivityTab} 
+          onTabChange={setActiveActivityTab}
+          onOpenSettings={() => setIsPaletteOpen(true)}
+        />
 
+        <div className={`flex-1 flex overflow-hidden relative transition-all duration-200`}>
           {activeActivityTab === 'explorer' && (
-            <Explorer
+            <Explorer 
               files={files}
               folders={folders}
               activeFileId={activeFileId}
@@ -718,201 +745,171 @@ export function ProjectIDE() {
           )}
 
           {activeActivityTab === 'search' && (
-            <SearchPanel
+            <SearchPanel 
               files={files}
-              onOpenFile={handleOpenFile}
+              fileContents={fileContents}
+              onSelectFile={(fId) => {
+                const f = files.find(file => (file.id || file._id) === fId);
+                if (f) handleOpenFile(f);
+              }}
             />
           )}
-        </div>
 
-        {/* Mobile Sidebar Overlay Drawer */}
-        {isMobileSidebarOpen && (
-          <div className="md:hidden fixed inset-0 z-40 flex">
-            <div 
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs" 
-              onClick={() => setIsMobileSidebarOpen(false)} 
+          <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary">
+            <EditorTabs 
+              openFiles={openFiles} 
+              activeFileId={activeFileId} 
+              dirtyFiles={dirtyFiles}
+              onSelectTab={handleOpenFile}
+              onCloseTab={handleCloseTab}
             />
-            <div className="relative z-50 flex h-full shadow-2xl bg-bg-primary">
-              <ActivityBar
-                activeTab={activeActivityTab}
-                onTabChange={(tab) => setActiveActivityTab(tab)}
-              />
-              {activeActivityTab === 'explorer' && (
-                <Explorer
-                  files={files}
-                  folders={folders}
-                  activeFileId={activeFileId}
-                  onOpenFile={(file) => {
-                    handleOpenFile(file);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  onCreateFile={handleCreateFile}
-                  onCreateFolder={handleCreateFolder}
-                  onDeleteFile={handleDeleteFile}
-                  onDeleteFolder={handleDeleteFolder}
-                  onRenameFile={handleRenameFile}
-                  onCloseMobile={() => setIsMobileSidebarOpen(false)}
+
+            <div className="flex-1 overflow-hidden relative">
+              {activeFile ? (
+                <CodeEditorContainer 
+                  file={activeFile}
+                  value={fileContents[activeFileId] ?? activeFile.sourceCode ?? ''}
+                  onChange={handleCodeChange}
+                  onSave={handleSaveActiveFile}
+                  onOpenCommandPalette={() => setIsPaletteOpen(true)}
+                  theme={editorTheme}
+                  onDiagnosticsChange={setDiagnostics}
+                  jumpToLine={jumpToLine}
                 />
-              )}
-              {activeActivityTab === 'search' && (
-                <SearchPanel
-                  files={files}
-                  onOpenFile={(file) => {
-                    handleOpenFile(file);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                />
+              ) : (
+                <div className="h-full bg-bg-primary flex flex-col items-center justify-center text-text-muted font-mono text-sm space-y-3">
+                  <div className="w-16 h-16 rounded-2xl bg-surface border border-border-main flex items-center justify-center text-brand-primary font-bold text-2xl shadow-inner">
+                    ⚡
+                  </div>
+                  <p className="text-text-primary font-semibold">DevSpace Cloud IDE Workspace</p>
+                  <p className="text-xs text-text-muted">Select a file from explorer or press Ctrl+K for command palette.</p>
+                </div>
               )}
             </div>
           </div>
-        )}
+        </div>
+      </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden bg-bg-deep">
-          <EditorTabs
-            openFiles={openFiles}
-            activeFileId={activeFileId}
-            dirtyFiles={dirtyFiles}
-            onSelectTab={(fId) => setActiveFileId(fId)}
-            onCloseTab={handleCloseTab}
-            onCloseOthers={handleCloseOthers}
-            onCloseAll={handleCloseAll}
-          />
+      <div className="flex flex-col border-t border-border-main bg-bg-deep z-20">
+        <StatusBar 
+          activeFile={activeFile}
+          diagnostics={diagnostics}
+          isSaving={isSaving}
+          isBottomOpen={isBottomOpen}
+          onToggleBottom={() => setIsBottomOpen(prev => !prev)}
+          onSelectProblemsTab={() => {
+            setIsBottomOpen(true);
+            setBottomTab('problems');
+          }}
+        />
 
-          {openFiles.length > 0 && activeFile ? (
-            <CodeEditorContainer
-              file={activeFile}
-              value={currentCode}
-              theme={editorTheme}
-              onChange={handleCodeChange}
-              onSave={handleSaveActiveFile}
-              onOpenCommandPalette={() => setIsPaletteOpen(true)}
-              onDiagnosticsChange={setDiagnostics}
-              jumpToLine={jumpToLine}
+        {isBottomOpen && (
+          <div 
+            style={{ height: `${bottomHeight}px` }}
+            className="flex flex-col border-t border-border-main bg-bg-deep overflow-hidden relative"
+          >
+            <div 
+              onMouseDown={handleMouseDownResize}
+              onTouchStart={handleTouchStartResize}
+              className="h-1.5 w-full bg-transparent hover:bg-brand-primary/50 cursor-ns-resize transition-colors absolute top-0 left-0 z-30"
             />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center font-mono text-text-muted space-y-3">
-              <div className="text-xl font-bold text-text-primary">DEVSPACE IDE Workspace</div>
-              <p className="text-xs max-w-sm">Select a file from the Explorer or click + to create a new file.</p>
-              <div className="flex items-center gap-2 text-xs pt-2">
-                <kbd className="px-2 py-1 bg-surface border border-border-main rounded text-text-secondary">Ctrl+S</kbd>
-                <span>Save File</span>
-                <span className="px-2">•</span>
-                <kbd className="px-2 py-1 bg-surface border border-border-main rounded text-text-secondary">Ctrl+K</kbd>
-                <span>Command Palette</span>
-              </div>
-            </div>
-          )}
 
-          {isBottomOpen && (
-            <div
-              style={{ height: `${bottomHeight}px` }}
-              className="border-t border-border-main flex flex-col bg-bg-deep shrink-0 font-mono text-xs relative max-h-[85vh]"
-            >
-              <div
-                onMouseDown={handleMouseDownResize}
-                onTouchStart={handleTouchStartResize}
-                className="h-2 w-full bg-border-main/50 hover:bg-brand-primary active:bg-brand-primary cursor-ns-resize transition-colors absolute -top-1 left-0 right-0 z-20 flex items-center justify-center"
-                title="Drag or slide up/down to resize bottom panel"
-              >
-                <div className="w-10 h-1 bg-text-muted/40 rounded-full" />
-              </div>
-
-              <div className="h-9 bg-surface-elevated border-b border-border-main px-2.5 flex items-center justify-between gap-2 select-none overflow-hidden">
-                <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 scrollbar-none py-1">
-                  <button
-                    onClick={() => setBottomTab('output')}
-                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                      bottomTab === 'output' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    <Cpu className="w-3.5 h-3.5" />
-                    <span>OUTPUT</span>
-                  </button>
-                  <button
-                    onClick={() => setBottomTab('problems')}
-                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                      bottomTab === 'problems' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    <AlertCircle className={`w-3.5 h-3.5 ${diagnostics.length > 0 ? 'text-status-error animate-pulse' : ''}`} />
-                    <span>PROBLEMS ({diagnostics.length})</span>
-                  </button>
-                  <button
-                    onClick={() => setBottomTab('terminal')}
-                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                      bottomTab === 'terminal' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    <Terminal className="w-3.5 h-3.5" />
-                    <span>TERMINAL</span>
-                  </button>
-                  <button
-                    onClick={() => setBottomTab('input')}
-                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                      bottomTab === 'input' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    <Input className="w-3.5 h-3.5" />
-                    <span>INPUT (stdin)</span>
-                  </button>
-                  <button
-                    onClick={() => setBottomTab('preview')}
-                    className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                      bottomTab === 'preview' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>PREVIEW</span>
-                  </button>
-                </div>
-
+            <div className="flex items-center justify-between px-3 py-1.5 bg-surface border-b border-border-main text-xs font-mono shrink-0">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                 <button
-                  onClick={() => setIsBottomOpen(false)}
-                  className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded bg-surface border border-border-main text-text-muted hover:text-text-primary text-xs font-bold cursor-pointer transition-colors z-10 shadow-xs"
-                  title="Close Terminal Panel"
+                  onClick={() => setBottomTab('output')}
+                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                    bottomTab === 'output' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                  }`}
                 >
-                  <X className="w-3.5 h-3.5 text-status-error shrink-0" />
-                  <span className="text-[11px] font-bold">Close</span>
+                  <TerminalIcon className="w-3.5 h-3.5" />
+                  <span>OUTPUT</span>
+                </button>
+                <button
+                  onClick={() => setBottomTab('problems')}
+                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                    bottomTab === 'problems' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>PROBLEMS ({diagnostics.length})</span>
+                </button>
+                <button
+                  onClick={() => setBottomTab('terminal')}
+                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                    bottomTab === 'terminal' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  <TerminalIcon className="w-3.5 h-3.5" />
+                  <span>TERMINAL</span>
+                </button>
+                <button
+                  onClick={() => setBottomTab('input')}
+                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                    bottomTab === 'input' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  <Input className="w-3.5 h-3.5" />
+                  <span>INPUT (stdin)</span>
+                </button>
+                <button
+                  onClick={() => setBottomTab('preview')}
+                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                    bottomTab === 'preview' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>PREVIEW</span>
                 </button>
               </div>
 
-              <div className="flex-1 overflow-hidden">
-                {bottomTab === 'output' && (
-                  <OutputPanel 
-                    output={output} 
-                    isRunning={isRunning} 
-                    executionTime={executionTime} 
-                    isWaitingForInput={isWaitingForInput}
-                    inputPromptText={inputPromptText}
-                    onSubmitInput={handleSubmitInteractiveInput}
-                  />
-                )}
-                {bottomTab === 'problems' && (
-                  <ProblemsPanel
-                    diagnostics={diagnostics}
-                    activeFile={activeFile}
-                    onSelectProblem={(diag) => {
-                      setJumpToLine({ line: diag.startLineNumber, column: diag.startColumn, timestamp: Date.now() });
-                    }}
-                  />
-                )}
-                {bottomTab === 'terminal' && (
-                  <TerminalPanel 
-                    project={project} 
-                    activeFile={activeFile} 
-                    files={files} 
-                    onRunCode={handleRunCode}
-                    isWaitingForInput={isWaitingForInput}
-                    inputPromptText={inputPromptText}
-                    onSubmitInput={handleSubmitInteractiveInput}
-                  />
-                )}
-                {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
-                {bottomTab === 'preview' && <PreviewPanel htmlContent={htmlPreview} />}
-              </div>
+              <button
+                onClick={() => setIsBottomOpen(false)}
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded bg-surface border border-border-main text-text-muted hover:text-text-primary text-xs font-bold cursor-pointer transition-colors z-10 shadow-xs"
+                title="Close Terminal Panel"
+              >
+                <X className="w-3.5 h-3.5 text-status-error shrink-0" />
+                <span className="text-[11px] font-bold">Close</span>
+              </button>
             </div>
-          )}
-        </div>
+
+            <div className="flex-1 overflow-hidden">
+              {bottomTab === 'output' && (
+                <OutputPanel 
+                  output={output} 
+                  isRunning={isRunning} 
+                  executionTime={executionTime} 
+                  executionStatus={executionStatus}
+                  isWaitingForInput={isWaitingForInput}
+                  inputPromptText={inputPromptText}
+                  onSubmitInput={handleSubmitInteractiveInput}
+                />
+              )}
+              {bottomTab === 'problems' && (
+                <ProblemsPanel
+                  diagnostics={diagnostics}
+                  activeFile={activeFile}
+                  onSelectProblem={(diag) => {
+                    setJumpToLine({ line: diag.startLineNumber, column: diag.startColumn, timestamp: Date.now() });
+                  }}
+                />
+              )}
+              {bottomTab === 'terminal' && (
+                <TerminalPanel 
+                  project={project} 
+                  activeFile={activeFile} 
+                  files={files} 
+                  onRunCode={handleRunCode}
+                  isWaitingForInput={isWaitingForInput}
+                  inputPromptText={inputPromptText}
+                  onSubmitInput={handleSubmitInteractiveInput}
+                />
+              )}
+              {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
+              {bottomTab === 'preview' && <PreviewPanel htmlContent={htmlPreview} />}
+            </div>
+          </div>
+        )}
       </div>
 
       <CommandPalette
