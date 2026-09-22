@@ -1,22 +1,49 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal as TerminalIcon, Trash2 } from 'lucide-react';
+import { Terminal as TerminalIcon, Trash2, CornerDownLeft } from 'lucide-react';
 
-export function TerminalPanel({ project, activeFile, files, onRunCode }) {
+export function TerminalPanel({ 
+  project, 
+  activeFile, 
+  files, 
+  onRunCode,
+  isWaitingForInput = false,
+  inputPromptText = '',
+  onSubmitInput
+}) {
   const [history, setHistory] = useState([
     { type: 'sys', text: `DEVSPACE Virtual Terminal v2.0.0 [Project: ${project?.name || 'Workspace'}]` },
     { type: 'sys', text: 'Type "help" for a list of supported virtual workspace commands.' }
   ]);
   const [inputVal, setInputVal] = useState('');
   const bottomRef = useRef(null);
+  const terminalInputRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [history]);
+  }, [history, isWaitingForInput]);
+
+  useEffect(() => {
+    if (isWaitingForInput && terminalInputRef.current) {
+      terminalInputRef.current.focus();
+    }
+  }, [isWaitingForInput]);
 
   const handleCommandSubmit = (e) => {
     e.preventDefault();
     const cmd = inputVal.trim();
-    if (!cmd) return;
+    if (!cmd && !isWaitingForInput) return;
+
+    if (isWaitingForInput) {
+      setHistory(prev => [
+        ...prev,
+        { type: 'cmd', text: `[stdin] ${inputPromptText ? inputPromptText + ' ' : ''}${inputVal}` }
+      ]);
+      if (onSubmitInput) {
+        onSubmitInput(inputVal);
+      }
+      setInputVal('');
+      return;
+    }
 
     const newHistory = [...history, { type: 'cmd', text: `$ ${cmd}` }];
     const parts = cmd.split(' ');
@@ -74,6 +101,11 @@ export function TerminalPanel({ project, activeFile, files, onRunCode }) {
         <div className="flex items-center gap-2 text-text-muted">
           <TerminalIcon className="w-3.5 h-3.5 text-brand-primary" />
           <span className="font-bold text-[11px] uppercase tracking-wider text-text-primary">Virtual Terminal</span>
+          {isWaitingForInput && (
+            <span className="text-[10px] font-bold text-brand-primary bg-brand-primary/10 border border-brand-primary/30 px-2 py-0.5 rounded animate-pulse">
+              Input Needed
+            </span>
+          )}
         </div>
         <button
           onClick={() => setHistory([])}
@@ -94,18 +126,37 @@ export function TerminalPanel({ project, activeFile, files, onRunCode }) {
           </div>
         ))}
 
+        {isWaitingForInput && (
+          <div className="text-brand-primary font-semibold py-1 flex items-center gap-1.5">
+            <span>{inputPromptText || 'Enter input:'}</span>
+          </div>
+        )}
+
         <form onSubmit={handleCommandSubmit} className="flex items-center gap-2 pt-1">
-          <span className="text-brand-primary font-bold">$</span>
+          {isWaitingForInput ? (
+            <span className="text-brand-primary font-bold text-xs bg-brand-primary/20 px-1.5 py-0.5 rounded">
+              Input &gt;
+            </span>
+          ) : (
+            <span className="text-brand-primary font-bold">$</span>
+          )}
           <input
+            ref={terminalInputRef}
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Type command here..."
+            placeholder={isWaitingForInput ? "Type input value and press Enter..." : "Type command here..."}
             className="flex-1 bg-transparent text-text-primary focus:outline-none font-mono text-xs"
           />
+          {isWaitingForInput && (
+            <button type="submit" className="text-brand-primary hover:text-brand-hover p-1">
+              <CornerDownLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
         </form>
         <div ref={bottomRef} />
       </div>
     </div>
   );
 }
+

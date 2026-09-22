@@ -115,7 +115,7 @@ export function IDEHeader({
         </button>
 
         <button
-          onClick={onRun}
+          onClick={() => onRun && onRun()}
           disabled={isRunning}
           className="px-3 sm:px-4 py-1.5 rounded-lg bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
         >

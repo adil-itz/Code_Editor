@@ -108,13 +108,17 @@ export async function deleteFolderApi(folderId) {
 
 export async function executeCodeApi(payload) {
   const token = localStorage.getItem('devspace-token') || localStorage.getItem('devspace_auth_token');
+  const safePayload = {
+    ...payload,
+    stdin: typeof payload?.stdin === 'string' ? payload.stdin : ''
+  };
   const res = await fetch('http://localhost:5000/api/execute', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(safePayload)
   });
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
