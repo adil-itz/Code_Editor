@@ -8,7 +8,8 @@ export function TerminalPanel({
   onRunCode,
   isWaitingForInput = false,
   inputPromptText = '',
-  onSubmitInput
+  onSubmitInput,
+  output = []
 }) {
   const [history, setHistory] = useState([
     { type: 'sys', text: `DEVSPACE Virtual Terminal v2.0.0 [Project: ${project?.name || 'Workspace'}]` },
@@ -17,6 +18,7 @@ export function TerminalPanel({
   const [inputVal, setInputVal] = useState('');
   const bottomRef = useRef(null);
   const terminalInputRef = useRef(null);
+  const lastOutputRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,6 +29,23 @@ export function TerminalPanel({
       terminalInputRef.current.focus();
     }
   }, [isWaitingForInput]);
+
+  useEffect(() => {
+    if (!output || output.length === 0) return;
+    if (isWaitingForInput) return;
+
+    const outputKey = JSON.stringify(output);
+    if (lastOutputRef.current === outputKey) return;
+    lastOutputRef.current = outputKey;
+
+    setHistory(prev => {
+      const formattedItems = output.map(item => ({
+        type: item.type === 'error' ? 'err' : 'res',
+        text: item.text
+      }));
+      return [...prev, ...formattedItems];
+    });
+  }, [output, isWaitingForInput]);
 
   const handleCommandSubmit = (e) => {
     e.preventDefault();

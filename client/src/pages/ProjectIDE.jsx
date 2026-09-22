@@ -786,130 +786,130 @@ export function ProjectIDE() {
                 </div>
               )}
             </div>
+            <div className="flex flex-col border-t border-border-main bg-bg-deep z-20">
+              <StatusBar 
+                activeFile={activeFile}
+                diagnostics={diagnostics}
+                isSaving={isSaving}
+                isBottomOpen={isBottomOpen}
+                onToggleBottom={() => setIsBottomOpen(prev => !prev)}
+                onSelectProblemsTab={() => {
+                  setIsBottomOpen(true);
+                  setBottomTab('problems');
+                }}
+              />
+
+              {isBottomOpen && (
+                <div 
+                  style={{ height: `${bottomHeight}px` }}
+                  className="flex flex-col border-t border-border-main bg-bg-deep overflow-hidden relative"
+                >
+                  <div 
+                    onMouseDown={handleMouseDownResize}
+                    onTouchStart={handleTouchStartResize}
+                    className="h-1.5 w-full bg-transparent hover:bg-brand-primary/50 cursor-ns-resize transition-colors absolute top-0 left-0 z-30"
+                  />
+
+                  <div className="flex items-center justify-between px-3 py-1.5 bg-surface border-b border-border-main text-xs font-mono shrink-0">
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                      <button
+                        onClick={() => setBottomTab('output')}
+                        className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                          bottomTab === 'output' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <TerminalIcon className="w-3.5 h-3.5" />
+                        <span>OUTPUT</span>
+                      </button>
+                      <button
+                        onClick={() => setBottomTab('problems')}
+                        className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                          bottomTab === 'problems' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>PROBLEMS ({diagnostics.length})</span>
+                      </button>
+                      <button
+                        onClick={() => setBottomTab('terminal')}
+                        className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                          bottomTab === 'terminal' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <TerminalIcon className="w-3.5 h-3.5" />
+                        <span>TERMINAL</span>
+                      </button>
+                      <button
+                        onClick={() => setBottomTab('input')}
+                        className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                          bottomTab === 'input' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <Input className="w-3.5 h-3.5" />
+                        <span>INPUT (stdin)</span>
+                      </button>
+                      <button
+                        onClick={() => setBottomTab('preview')}
+                        className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                          bottomTab === 'preview' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>PREVIEW</span>
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => setIsBottomOpen(false)}
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded bg-surface border border-border-main text-text-muted hover:text-text-primary text-xs font-bold cursor-pointer transition-colors z-10 shadow-xs"
+                      title="Close Terminal Panel"
+                    >
+                      <X className="w-3.5 h-3.5 text-status-error shrink-0" />
+                      <span className="text-[11px] font-bold">Close</span>
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden">
+                    {bottomTab === 'output' && (
+                      <OutputPanel 
+                        output={output} 
+                        isRunning={isRunning} 
+                        executionTime={executionTime} 
+                        executionStatus={executionStatus}
+                        isWaitingForInput={isWaitingForInput}
+                        inputPromptText={inputPromptText}
+                        onSubmitInput={handleSubmitInteractiveInput}
+                      />
+                    )}
+                    {bottomTab === 'problems' && (
+                      <ProblemsPanel
+                        diagnostics={diagnostics}
+                        activeFile={activeFile}
+                        onSelectProblem={(diag) => {
+                          setJumpToLine({ line: diag.startLineNumber, column: diag.startColumn, timestamp: Date.now() });
+                        }}
+                      />
+                    )}
+                    {bottomTab === 'terminal' && (
+                      <TerminalPanel 
+                        project={project} 
+                        activeFile={activeFile} 
+                        files={files} 
+                        onRunCode={handleRunCode}
+                        isWaitingForInput={isWaitingForInput}
+                        inputPromptText={inputPromptText}
+                        onSubmitInput={handleSubmitInteractiveInput}
+                        output={output}
+                      />
+                    )}
+                    {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
+                    {bottomTab === 'preview' && <PreviewPanel htmlContent={htmlPreview} />}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="flex flex-col border-t border-border-main bg-bg-deep z-20">
-        <StatusBar 
-          activeFile={activeFile}
-          diagnostics={diagnostics}
-          isSaving={isSaving}
-          isBottomOpen={isBottomOpen}
-          onToggleBottom={() => setIsBottomOpen(prev => !prev)}
-          onSelectProblemsTab={() => {
-            setIsBottomOpen(true);
-            setBottomTab('problems');
-          }}
-        />
-
-        {isBottomOpen && (
-          <div 
-            style={{ height: `${bottomHeight}px` }}
-            className="flex flex-col border-t border-border-main bg-bg-deep overflow-hidden relative"
-          >
-            <div 
-              onMouseDown={handleMouseDownResize}
-              onTouchStart={handleTouchStartResize}
-              className="h-1.5 w-full bg-transparent hover:bg-brand-primary/50 cursor-ns-resize transition-colors absolute top-0 left-0 z-30"
-            />
-
-            <div className="flex items-center justify-between px-3 py-1.5 bg-surface border-b border-border-main text-xs font-mono shrink-0">
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                <button
-                  onClick={() => setBottomTab('output')}
-                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                    bottomTab === 'output' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <TerminalIcon className="w-3.5 h-3.5" />
-                  <span>OUTPUT</span>
-                </button>
-                <button
-                  onClick={() => setBottomTab('problems')}
-                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                    bottomTab === 'problems' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>PROBLEMS ({diagnostics.length})</span>
-                </button>
-                <button
-                  onClick={() => setBottomTab('terminal')}
-                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                    bottomTab === 'terminal' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <TerminalIcon className="w-3.5 h-3.5" />
-                  <span>TERMINAL</span>
-                </button>
-                <button
-                  onClick={() => setBottomTab('input')}
-                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                    bottomTab === 'input' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <Input className="w-3.5 h-3.5" />
-                  <span>INPUT (stdin)</span>
-                </button>
-                <button
-                  onClick={() => setBottomTab('preview')}
-                  className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1.5 ${
-                    bottomTab === 'preview' ? 'bg-surface text-brand-primary border border-border-main' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>PREVIEW</span>
-                </button>
-              </div>
-
-              <button
-                onClick={() => setIsBottomOpen(false)}
-                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded bg-surface border border-border-main text-text-muted hover:text-text-primary text-xs font-bold cursor-pointer transition-colors z-10 shadow-xs"
-                title="Close Terminal Panel"
-              >
-                <X className="w-3.5 h-3.5 text-status-error shrink-0" />
-                <span className="text-[11px] font-bold">Close</span>
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-hidden">
-              {bottomTab === 'output' && (
-                <OutputPanel 
-                  output={output} 
-                  isRunning={isRunning} 
-                  executionTime={executionTime} 
-                  executionStatus={executionStatus}
-                  isWaitingForInput={isWaitingForInput}
-                  inputPromptText={inputPromptText}
-                  onSubmitInput={handleSubmitInteractiveInput}
-                />
-              )}
-              {bottomTab === 'problems' && (
-                <ProblemsPanel
-                  diagnostics={diagnostics}
-                  activeFile={activeFile}
-                  onSelectProblem={(diag) => {
-                    setJumpToLine({ line: diag.startLineNumber, column: diag.startColumn, timestamp: Date.now() });
-                  }}
-                />
-              )}
-              {bottomTab === 'terminal' && (
-                <TerminalPanel 
-                  project={project} 
-                  activeFile={activeFile} 
-                  files={files} 
-                  onRunCode={handleRunCode}
-                  isWaitingForInput={isWaitingForInput}
-                  inputPromptText={inputPromptText}
-                  onSubmitInput={handleSubmitInteractiveInput}
-                />
-              )}
-              {bottomTab === 'input' && <InputPanel stdin={stdin} onChangeStdin={setStdin} />}
-              {bottomTab === 'preview' && <PreviewPanel htmlContent={htmlPreview} />}
-            </div>
-          </div>
-        )}
       </div>
 
       <CommandPalette
