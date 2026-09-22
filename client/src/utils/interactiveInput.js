@@ -84,12 +84,11 @@ export function isInputNeeded(code, language, currentStdin, stderr, stdout) {
   return inputLines.length < totalRequired;
 }
 
-export function formatInterleavedTerminalOutput(stdout, stdin, promptsHistory = []) {
+export function formatInterleavedTerminalOutput(stdout, stdin, promptsHistory = [], isWaitingForInput = false) {
   if (!stdout || typeof stdout !== 'string') return stdout || '';
-  if (!stdin) return stdout;
 
-  const inputs = stdin.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || arr[idx] !== '');
-  if (inputs.length === 0) return stdout;
+  const inputs = stdin ? stdin.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || arr[idx] !== '') : [];
+  if (!stdin && promptsHistory.length === 0 && !isWaitingForInput) return stdout;
 
   let formatted = stdout;
 
@@ -108,6 +107,33 @@ export function formatInterleavedTerminalOutput(stdout, stdin, promptsHistory = 
         
         const replacement = formatted.slice(promptIdx, endIdx) + ' ' + inputVal + '\n';
         formatted = formatted.slice(0, promptIdx) + replacement + formatted.slice(endIdx);
+      }
+    }
+  }
+
+  if (isWaitingForInput) {
+    const lastAnsweredInputIdx = inputs.length - 1;
+    if (lastAnsweredInputIdx >= 0 && promptsHistory[lastAnsweredInputIdx]) {
+      const lastClean = promptsHistory[lastAnsweredInputIdx].trim();
+      const pos = formatted.lastIndexOf(lastClean);
+      if (pos !== -1) {
+        const lineEnd = formatted.indexOf('\n', pos);
+        if (lineEnd !== -1) {
+          formatted = formatted.slice(0, lineEnd);
+        }
+      }
+    } else if (promptsHistory[0] || (extractPromptsFromStdout(stdout)[0])) {
+      const firstPrompt = promptsHistory[0] || extractPromptsFromStdout(stdout)[0];
+      if (firstPrompt) {
+        const firstClean = firstPrompt.trim();
+        const pos = formatted.indexOf(firstClean);
+        if (pos !== -1) {
+          let endIdx = pos + firstClean.length;
+          while (endIdx < formatted.length && (formatted[endIdx] === ' ' || formatted[endIdx] === '\t')) {
+            endIdx++;
+          }
+          formatted = formatted.slice(0, endIdx);
+        }
       }
     }
   }

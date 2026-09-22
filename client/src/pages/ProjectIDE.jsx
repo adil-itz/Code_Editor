@@ -626,7 +626,7 @@ export function ProjectIDE() {
         setIsWaitingForInput(true);
         setInputPromptText(cleanPromptLabel || 'Program is waiting for input (stdin):');
 
-        const formattedLogs = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts);
+        const formattedLogs = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts, true);
         setOutput([{ type: 'log', text: formattedLogs }]);
         setIsRunning(false);
         return;
@@ -636,7 +636,7 @@ export function ProjectIDE() {
       setInputPromptText('');
 
       const logs = [];
-      const formattedStdout = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts);
+      const formattedStdout = formatInterleavedTerminalOutput(res.stdout, currentStdin, activePrompts, false);
       if (formattedStdout) logs.push({ type: 'log', text: formattedStdout });
       if (res.stderr) logs.push({ type: 'error', text: res.stderr });
       if (res.compile_output) logs.push({ type: 'error', text: res.compile_output });
