@@ -17,6 +17,7 @@ import { Explorer } from '../components/ide/Explorer';
 import { SearchPanel } from '../components/ide/SearchPanel';
 import { EditorTabs } from '../components/ide/EditorTabs';
 import { CodeEditorContainer } from '../components/ide/CodeEditorContainer';
+import { ExtensionsPanel } from '../components/ide/ExtensionsPanel';
 import { TerminalPanel } from '../components/ide/TerminalPanel';
 import { OutputPanel } from '../components/ide/OutputPanel';
 import { InputPanel } from '../components/ide/InputPanel';
@@ -51,6 +52,31 @@ export function ProjectIDE() {
   const [bottomHeight, setBottomHeight] = useState(240);
   const [isResizing, setIsResizing] = useState(false);
   const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('devspace-ide-theme') || 'vs-dark');
+
+  const [enabledExtensions, setEnabledExtensions] = useState(() => {
+    try {
+      const saved = localStorage.getItem('devspace-ide-extensions');
+      return saved ? JSON.parse(saved) : {
+        'auto-indent': true,
+        'code-formatter': true,
+        'autocomplete': true
+      };
+    } catch (e) {
+      return {
+        'auto-indent': true,
+        'code-formatter': true,
+        'autocomplete': true
+      };
+    }
+  });
+
+  const handleToggleExtension = (extId) => {
+    setEnabledExtensions(prev => {
+      const updated = { ...prev, [extId]: !prev[extId] };
+      localStorage.setItem('devspace-ide-extensions', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   const handleThemeChange = (newTheme) => {
     setEditorTheme(newTheme);
@@ -755,6 +781,13 @@ export function ProjectIDE() {
             />
           )}
 
+          {activeActivityTab === 'extensions' && (
+            <ExtensionsPanel 
+              enabledExtensions={enabledExtensions}
+              onToggleExtension={handleToggleExtension}
+            />
+          )}
+
           <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary">
             <EditorTabs 
               openFiles={openFiles} 
@@ -775,6 +808,7 @@ export function ProjectIDE() {
                   theme={editorTheme}
                   onDiagnosticsChange={setDiagnostics}
                   jumpToLine={jumpToLine}
+                  enabledExtensions={enabledExtensions}
                 />
               ) : (
                 <div className="h-full bg-bg-primary flex flex-col items-center justify-center text-text-muted font-mono text-sm space-y-3">
