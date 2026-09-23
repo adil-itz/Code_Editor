@@ -5,9 +5,9 @@ export function ActivityBar({ activeTab, onTabChange }) {
   const navItems = [
     { id: 'explorer', label: 'Explorer', icon: Files },
     { id: 'search', label: 'Search', icon: Search },
+    { id: 'extensions', label: 'Extensions', icon: Blocks },
     { id: 'source-control', label: 'Source Control', icon: GitBranch, disabled: true },
-    { id: 'debug', label: 'Run & Debug', icon: PlayCircle, disabled: true },
-    { id: 'extensions', label: 'Extensions', icon: Blocks, disabled: true }
+    { id: 'debug', label: 'Run & Debug', icon: PlayCircle, disabled: true }
   ];
 
   return (
