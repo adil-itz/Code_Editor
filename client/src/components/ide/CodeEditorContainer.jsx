@@ -66,6 +66,94 @@ function getLanguageSnippets(monaco, lang, range) {
   if (lang === 'javascript' || lang === 'typescript') {
     return [
       {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if (${1:condition}) {\n\t${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'else',
+        kind: K.Keyword,
+        insertText: 'else {\n\t${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Else statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while (${1:condition}) {\n\t${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
+      {
+        label: 'for',
+        kind: K.Keyword,
+        insertText: 'for (let ${1:i} = 0; ${1:i} < ${2:array}.length; ${1:i}++) {\n\t${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'For loop',
+        range
+      },
+      {
+        label: 'switch',
+        kind: K.Keyword,
+        insertText: 'switch (${1:key}) {\n\tcase ${2:value}:\n\t\t${0}\n\t\tbreak;\n\tdefault:\n\t\tbreak;\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Switch statement',
+        range
+      },
+      {
+        label: 'return',
+        kind: K.Keyword,
+        insertText: 'return ${1:value};',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Return statement',
+        range
+      },
+      {
+        label: 'class',
+        kind: K.Keyword,
+        insertText: 'class ${1:ClassName} {\n\tconstructor(${2:params}) {\n\t\t${0}\n\t}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Class declaration',
+        range
+      },
+      {
+        label: 'import',
+        kind: K.Keyword,
+        insertText: 'import ${1:name} from \'${2:module}\';',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Import module',
+        range
+      },
+      {
+        label: 'export',
+        kind: K.Keyword,
+        insertText: 'export default ${1:name};',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Export default',
+        range
+      },
+      {
+        label: 'const',
+        kind: K.Keyword,
+        insertText: 'const ${1:name} = ${2:value};',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Const declaration',
+        range
+      },
+      {
+        label: 'let',
+        kind: K.Keyword,
+        insertText: 'let ${1:name} = ${2:value};',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Let declaration',
+        range
+      },
+      {
         label: 'console.log',
         kind: K.Function,
         insertText: 'console.log(${1:value});',
@@ -98,14 +186,6 @@ function getLanguageSnippets(monaco, lang, range) {
         range
       },
       {
-        label: 'forLoop',
-        kind: K.Snippet,
-        insertText: 'for (let ${1:i} = 0; ${1:i} < ${2:array}.length; ${1:i}++) {\n\t${0}\n}',
-        insertTextRules: R.InsertAsSnippet,
-        detail: 'Standard for loop snippet',
-        range
-      },
-      {
         label: 'tryCatch',
         kind: K.Snippet,
         insertText: 'try {\n\t${1}\n} catch (${2:error}) {\n\tconsole.error(${2:error});\n}',
@@ -135,6 +215,62 @@ function getLanguageSnippets(monaco, lang, range) {
   if (lang === 'python') {
     return [
       {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if ${1:condition}:\n    ${0:pass}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'elif',
+        kind: K.Keyword,
+        insertText: 'elif ${1:condition}:\n    ${0:pass}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Elif statement',
+        range
+      },
+      {
+        label: 'else',
+        kind: K.Keyword,
+        insertText: 'else:\n    ${0:pass}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Else statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while ${1:condition}:\n    ${0:pass}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
+      {
+        label: 'for',
+        kind: K.Keyword,
+        insertText: 'for ${1:item} in ${2:iterable}:\n    ${0:pass}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'For loop',
+        range
+      },
+      {
+        label: 'return',
+        kind: K.Keyword,
+        insertText: 'return ${1:value}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Return statement',
+        range
+      },
+      {
+        label: 'class',
+        kind: K.Keyword,
+        insertText: 'class ${1:ClassName}:\n    def __init__(self${2:, args}):\n        ${0:pass}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Class statement',
+        range
+      },
+      {
         label: 'print',
         kind: K.Function,
         insertText: 'print(f"${1:value}")',
@@ -159,14 +295,6 @@ function getLanguageSnippets(monaco, lang, range) {
         range
       },
       {
-        label: 'forIn',
-        kind: K.Snippet,
-        insertText: 'for ${1:item} in ${2:iterable}:\n    ${0:pass}',
-        insertTextRules: R.InsertAsSnippet,
-        detail: 'For loop snippet',
-        range
-      },
-      {
         label: 'tryExcept',
         kind: K.Snippet,
         insertText: 'try:\n    ${1:pass}\nexcept ${2:Exception} as e:\n    print(f"Error: {e}")',
@@ -179,6 +307,46 @@ function getLanguageSnippets(monaco, lang, range) {
 
   if (lang === 'cpp' || lang === 'c') {
     return [
+      {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'else',
+        kind: K.Keyword,
+        insertText: 'else {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Else statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
+      {
+        label: 'for',
+        kind: K.Keyword,
+        insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ++${1:i}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'For loop',
+        range
+      },
+      {
+        label: 'return',
+        kind: K.Keyword,
+        insertText: 'return ${1:0};',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Return statement',
+        range
+      },
       {
         label: 'main',
         kind: K.Snippet,
@@ -193,14 +361,6 @@ function getLanguageSnippets(monaco, lang, range) {
         insertText: 'std::cout << ${1:message} << std::endl;',
         insertTextRules: R.InsertAsSnippet,
         detail: 'Print to standard output',
-        range
-      },
-      {
-        label: 'forLoop',
-        kind: K.Snippet,
-        insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ++${1:i}) {\n    ${0}\n}',
-        insertTextRules: R.InsertAsSnippet,
-        detail: 'C++ loop',
         range
       }
     ];
@@ -251,6 +411,30 @@ function getLanguageSnippets(monaco, lang, range) {
   if (lang === 'java') {
     return [
       {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
+      {
+        label: 'for',
+        kind: K.Keyword,
+        insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'For loop',
+        range
+      },
+      {
         label: 'mainClass',
         kind: K.Snippet,
         insertText: 'public class ${1:Main} {\n    public static void main(String[] args) {\n        System.out.println("${2:Hello Java}");\n    }\n}',
@@ -271,6 +455,22 @@ function getLanguageSnippets(monaco, lang, range) {
 
   if (lang === 'csharp') {
     return [
+      {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
       {
         label: 'program',
         kind: K.Snippet,
@@ -314,6 +514,14 @@ function getLanguageSnippets(monaco, lang, range) {
   if (lang === 'go') {
     return [
       {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if ${1:condition} {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
         label: 'mainGo',
         kind: K.Snippet,
         insertText: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("${1:Hello Go}")\n}',
@@ -327,6 +535,22 @@ function getLanguageSnippets(monaco, lang, range) {
   if (lang === 'rust') {
     return [
       {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if ${1:condition} {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while ${1:condition} {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
+      {
         label: 'mainRust',
         kind: K.Snippet,
         insertText: 'fn main() {\n    println!("${1:Hello Rust}");\n}',
@@ -339,6 +563,22 @@ function getLanguageSnippets(monaco, lang, range) {
 
   if (lang === 'php') {
     return [
+      {
+        label: 'if',
+        kind: K.Keyword,
+        insertText: 'if (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'If statement',
+        range
+      },
+      {
+        label: 'while',
+        kind: K.Keyword,
+        insertText: 'while (${1:condition}) {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'While loop',
+        range
+      },
       {
         label: 'phpStarter',
         kind: K.Snippet,
