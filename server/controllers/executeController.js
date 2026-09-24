@@ -12,7 +12,9 @@ const JUDGE0_LANG_IDS = {
   ruby: 72,
   go: 60,
   rust: 73,
-  sql: 82
+  sql: 82,
+  kotlin: 78,
+  swift: 83
 };
 
 export function prepareCodeWithTimezone(code, language, offsetMinutes = -330) {
@@ -76,10 +78,36 @@ export async function executeCodeController(req, res) {
 
     const lowerLang = language.toLowerCase();
 
-    if (lowerLang === 'html' || lowerLang === 'css') {
+    if (lowerLang === 'html' || lowerLang === 'css' || lowerLang === 'react' || lowerLang === 'jsx' || lowerLang === 'tsx') {
+      let htmlDoc = code;
+      if (lowerLang === 'css') {
+        htmlDoc = `<html><head><style>${code}</style></head><body><div class="card"><h1>CSS Preview</h1></div></body></html>`;
+      } else if (lowerLang === 'react' || lowerLang === 'jsx' || lowerLang === 'tsx') {
+        const hasMount = code.includes('createRoot') || code.includes('ReactDOM.render');
+        htmlDoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>React JSX Live Preview</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    ${hasMount ? code : `${code}\n\nif (typeof App !== 'undefined') { const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />); }`}
+  </script>
+</body>
+</html>`;
+      }
       return res.json({
         type: 'web',
-        html: lowerLang === 'css' ? `<html><head><style>${code}</style></head><body><div class="card"><h1>CSS Preview</h1></div></body></html>` : code,
+        html: htmlDoc,
         message: `${language.toUpperCase()} rendered successfully.`
       });
     }

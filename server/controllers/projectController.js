@@ -12,10 +12,16 @@ const TEMPLATE_DEFAULT_FILES = {
     { name: 'script.js', path: 'script.js', language: 'javascript', sourceCode: 'document.getElementById("btn").addEventListener("click", () => {\n  alert("Button clicked in DEVSPACE IDE!");\n});' }
   ],
   'react': [
-    { name: 'index.html', path: 'index.html', language: 'html', sourceCode: '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <title>React App</title>\n</head>\n<body>\n  <div id="root"></div>\n</body>\n</html>' },
-    { name: 'App.jsx', path: 'src/App.jsx', language: 'javascript', sourceCode: 'import React, { useState } from "react";\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n  return (\n    <div className="app">\n      <h1>React Component Sandbox</h1>\n      <button onClick={() => setCount(count + 1)}>Count: {count}</button>\n    </div>\n  );\n}' },
-    { name: 'main.jsx', path: 'src/main.jsx', language: 'javascript', sourceCode: 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\n\nReactDOM.createRoot(document.getElementById("root")).render(<App />);' },
+    { name: 'App.jsx', path: 'src/App.jsx', language: 'react', sourceCode: 'import React, { useState } from "react";\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n  return (\n    <div className="p-6 text-center bg-slate-900 text-white font-sans rounded-xl border border-slate-700 shadow-xl">\n      <h1 className="text-2xl font-bold text-indigo-400 mb-2">React Component Sandbox</h1>\n      <p className="text-slate-400 mb-4">Live JSX rendering engine with React 18 & Tailwind CSS</p>\n      <button \n        onClick={() => setCount(count + 1)} \n        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-semibold transition-all shadow-md"\n      >\n        Count: {count}\n      </button>\n    </div>\n  );\n}' },
     { name: 'package.json', path: 'package.json', language: 'json', sourceCode: '{\n  "name": "react-workspace",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}' }
+  ],
+  'kotlin': [
+    { name: 'Main.kt', path: 'Main.kt', language: 'kotlin', sourceCode: 'fun main() {\n    println("Hello from DEVSPACE Kotlin Engine!")\n    val skills = listOf("Kotlin", "Android", "JVM", "Coroutines")\n    for ((index, skill) in skills.withIndex()) {\n        println("Skill ${index + 1}: $skill")\n    }\n}' },
+    { name: 'README.md', path: 'README.md', language: 'markdown', sourceCode: '# Kotlin Project\n\nRun `Main.kt`.' }
+  ],
+  'swift': [
+    { name: 'main.swift', path: 'main.swift', language: 'swift', sourceCode: 'import Foundation\n\nprint("Hello from DEVSPACE Swift Sandbox!")\nlet features = ["Swift 5.8", "iOS Development", "SwiftUI", "Concurrency"]\nfor feature in features {\n    print("- \\(feature)")\n}' },
+    { name: 'README.md', path: 'README.md', language: 'markdown', sourceCode: '# Swift Project\n\nRun `main.swift`.' }
   ],
   'node': [
     { name: 'server.js', path: 'server.js', language: 'javascript', sourceCode: 'const express = require("express");\nconst app = express();\nconst PORT = 3000;\n\napp.get("/", (req, res) => {\n  res.json({ message: "Hello from DEVSPACE Node.js Server!" });\n});\n\nconsole.log("Server application ready.");' },
@@ -73,10 +79,12 @@ export async function createProject(req, res) {
     const langMap = {
       'empty': 'javascript',
       'html-css-js': 'html',
-      'react': 'javascript',
+      'react': 'react',
       'node': 'javascript',
       'python': 'python',
-      'typescript': 'typescript'
+      'typescript': 'typescript',
+      'kotlin': 'kotlin',
+      'swift': 'swift'
     };
 
     const project = await Project.create({
