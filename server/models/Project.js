@@ -17,7 +17,7 @@ const projectSchema = new mongoose.Schema({
   },
   template: {
     type: String,
-    enum: ['empty', 'html-css-js', 'react', 'node', 'python', 'typescript'],
+    enum: ['empty', 'html-css-js', 'react', 'node', 'python', 'typescript', 'kotlin', 'swift'],
     default: 'empty'
   },
   defaultLanguage: {

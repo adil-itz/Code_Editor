@@ -26,9 +26,12 @@ import { tokenizeCode, getTokenColorClass } from '../../utils/syntaxHighlighter'
 import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedTerminalOutput } from '../../utils/interactiveInput';
 
 const LANGUAGES_LIST = [
+  { id: 'react', name: 'React (JSX)', ext: 'jsx', category: 'Frontend Framework' },
   { id: 'javascript', name: 'JavaScript', ext: 'js', category: 'Web / Scripting' },
   { id: 'typescript', name: 'TypeScript', ext: 'ts', category: 'Web / Typing' },
   { id: 'python', name: 'Python', ext: 'py', category: 'AI / Scripting' },
+  { id: 'kotlin', name: 'Kotlin', ext: 'kt', category: 'JVM / Android' },
+  { id: 'swift', name: 'Swift', ext: 'swift', category: 'Apple / iOS' },
   { id: 'html', name: 'HTML5', ext: 'html', category: 'Web Markup' },
   { id: 'css', name: 'CSS3', ext: 'css', category: 'Styling' },
   { id: 'cpp', name: 'C++', ext: 'cpp', category: 'Systems' },
@@ -44,9 +47,12 @@ const LANGUAGES_LIST = [
 ];
 
 const EXT_TO_LANG_MAP = {
-  js: 'javascript', jsx: 'javascript', mjs: 'javascript',
-  ts: 'typescript', tsx: 'typescript',
+  js: 'javascript', mjs: 'javascript',
+  jsx: 'react', tsx: 'react', react: 'react',
+  ts: 'typescript',
   py: 'python', pyw: 'python',
+  kt: 'kotlin', kts: 'kotlin',
+  swift: 'swift',
   html: 'html', htm: 'html',
   css: 'css',
   cpp: 'cpp', cc: 'cpp', cxx: 'cpp', hpp: 'cpp',
@@ -62,6 +68,63 @@ const EXT_TO_LANG_MAP = {
 };
 
 const DEFAULT_TEMPLATES = {
+  react: `import React, { useState } from "react";
+
+export default function App() {
+  const [count, setCount] = useState(0);
+  const [name, setName] = useState("Developer");
+
+  return (
+    <div className="p-6 max-w-md mx-auto bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 font-sans mt-4">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="w-3 h-3 rounded-full bg-indigo-500 animate-ping" />
+        <h1 className="text-xl font-bold text-indigo-400">React Component Sandbox</h1>
+      </div>
+      <p className="text-slate-300 text-sm mb-4">
+        Hello, <span className="text-indigo-300 font-semibold">{name}</span>! Live JSX rendering active.
+      </p>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+            placeholder="Enter name..."
+          />
+        </div>
+        <button
+          onClick={() => setCount(count + 1)}
+          className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-all shadow-md active:scale-95"
+        >
+          Count: {count}
+        </button>
+      </div>
+    </div>
+  );
+}`,
+
+  kotlin: `// Kotlin Execution Sandbox
+fun main() {
+    println("Welcome to DEVSPACE Kotlin Sandbox!")
+    val features = listOf("Full Type Inference", "Null Safety", "Coroutines", "Java Interop")
+    println("\\nKey Features:")
+    for ((index, item) in features.withIndex()) {
+        println("  \${index + 1}. \$item")
+    }
+}`,
+
+  swift: `// Swift Language Sandbox
+import Foundation
+
+print("Welcome to DEVSPACE Swift Runtime Sandbox!")
+let iOSFrameworks = ["SwiftUI", "UIKit", "CoreData", "Combine"]
+
+print("\\nPopular Frameworks:")
+for framework in iOSFrameworks {
+    print("  • \\(framework)")
+}`,
+
   javascript: `// Online JavaScript Execution Sandbox
 function calculateFibonacci(n) {
   if (n <= 1) return n;

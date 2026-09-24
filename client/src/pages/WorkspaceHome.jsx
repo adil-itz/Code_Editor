@@ -22,11 +22,13 @@ import { useAuth } from '../context/AuthContext';
 
 const PROJECT_TEMPLATES = [
   { id: 'empty', name: 'Empty Project', desc: 'Minimal starting codebase with README.md', lang: 'JavaScript', icon: Code2 },
+  { id: 'react', name: 'React (JSX) App', desc: 'React 18 component template with live web preview', lang: 'React (JSX)', icon: Layers },
   { id: 'html-css-js', name: 'HTML / CSS / JavaScript', desc: 'Web frontend template with live preview support', lang: 'HTML5', icon: FileCode },
-  { id: 'react', name: 'React Application', desc: 'JSX component structure template', lang: 'React JS', icon: Layers },
   { id: 'node', name: 'Node.js Backend', desc: 'Express API microservice starter', lang: 'Node.js', icon: Terminal },
   { id: 'python', name: 'Python Project', desc: 'Python script & utilities starter', lang: 'Python', icon: Code2 },
-  { id: 'typescript', name: 'TypeScript Project', desc: 'Typed TS application starter', lang: 'TypeScript', icon: Sparkles }
+  { id: 'typescript', name: 'TypeScript Project', desc: 'Typed TS application starter', lang: 'TypeScript', icon: Sparkles },
+  { id: 'kotlin', name: 'Kotlin Project', desc: 'Kotlin JVM & Android application starter', lang: 'Kotlin', icon: Sparkles },
+  { id: 'swift', name: 'Swift Project', desc: 'Swift 5.8 iOS & macOS application starter', lang: 'Swift', icon: Code2 }
 ];
 
 export function WorkspaceHome() {

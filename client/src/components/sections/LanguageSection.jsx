@@ -5,8 +5,11 @@ import { Badge } from '../ui/Badge';
 
 export function LanguageSection() {
   const languages = [
+    { id: 'react', name: 'React (JSX)', ext: 'jsx', runtime: 'React 18 & Babel Live Engine', snippet: `export default function App() {\n  const [count, setCount] = useState(0);\n  return (\n    <button onClick={() => setCount(count + 1)}>\n      Clicked {count} times\n    </button>\n  );\n}` },
     { id: 'typescript', name: 'TypeScript', ext: 'ts', runtime: 'Node.js v20.11', snippet: `type User = { id: string; name: string };\nconst fetchUser = async (id: string): Promise<User> => {\n  return { id, name: "Alex Developer" };\n};` },
     { id: 'python', name: 'Python', ext: 'py', runtime: 'Python 3.12.2', snippet: `def calculate_fibonacci(n: int) -> list[int]:\n    sequence = [0, 1]\n    for i in range(2, n):\n        sequence.append(sequence[-1] + sequence[-2])\n    return sequence` },
+    { id: 'kotlin', name: 'Kotlin', ext: 'kt', runtime: 'Kotlin 1.9 JVM', snippet: `fun main() {\n    val tech = listOf("Android", "JVM", "Coroutines")\n    tech.forEach { println("Kotlin Stack: $it") }\n}` },
+    { id: 'swift', name: 'Swift', ext: 'swift', runtime: 'Swift 5.8 Compiler', snippet: `import Foundation\n\nlet features = ["SwiftUI", "Combine", "Concurrency"]\nfeatures.forEach { print("Swift Feature: \\($0)") }` },
     { id: 'cpp', name: 'C++', ext: 'cpp', runtime: 'GCC 13.2.0', snippet: `#include <iostream>\n#include <vector>\n\nint main() {\n    std::vector<std::string> stack = {"WASM", "C++", "V8"};\n    std::cout << "DEVSPACE Native Compiler" << std::endl;\n    return 0;\n}` },
     { id: 'javascript', name: 'JavaScript', ext: 'js', runtime: 'V8 Engine v12', snippet: `const pipeline = [1, 2, 3, 4, 5]\n  .map(x => x * 2)\n  .filter(x => x > 4);\nconsole.log({ pipeline });` },
     { id: 'html', name: 'HTML & CSS', ext: 'html', runtime: 'Browser DOM Engine', snippet: `<div class="editor-canvas">\n  <h1 className="text-brand">Browser Native IDE</h1>\n  <button class="cta-btn">Run Engine</button>\n</div>` },

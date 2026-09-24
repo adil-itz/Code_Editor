@@ -3,8 +3,8 @@ import Folder from '../models/Folder.js';
 import Project from '../models/Project.js';
 
 const EXT_LANG_MAP = {
-  js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
-  ts: 'typescript', tsx: 'typescript',
+  js: 'javascript', jsx: 'react', mjs: 'javascript', cjs: 'javascript',
+  ts: 'typescript', tsx: 'react',
   py: 'python',
   html: 'html', htm: 'html',
   css: 'css', scss: 'css',
@@ -18,6 +18,9 @@ const EXT_LANG_MAP = {
   rs: 'rust',
   sql: 'sql',
   json: 'json',
+  kt: 'kotlin', kts: 'kotlin',
+  swift: 'swift',
+  react: 'react',
   md: 'markdown', txt: 'plaintext', csv: 'plaintext', xml: 'xml', svg: 'xml', env: 'plaintext', gitignore: 'plaintext'
 };
 

@@ -5,6 +5,9 @@ import { validateCodeSyntax } from '../../utils/syntaxChecker';
 const MONACO_LANG_MAP = {
   javascript: 'javascript',
   typescript: 'typescript',
+  react: 'javascript',
+  jsx: 'javascript',
+  tsx: 'typescript',
   python: 'python',
   html: 'html',
   css: 'css',
@@ -18,6 +21,8 @@ const MONACO_LANG_MAP = {
   rust: 'rust',
   sql: 'sql',
   json: 'json',
+  kotlin: 'kotlin',
+  swift: 'swift',
   markdown: 'markdown'
 };
 
@@ -34,7 +39,7 @@ function formatCodeByLanguage(code, lang) {
 
   const lines = code.split('\n');
   let indentLevel = 0;
-  const isFourSpaceLang = lang === 'python' || lang === 'cpp' || lang === 'c' || lang === 'java' || lang === 'csharp' || lang === 'go' || lang === 'rust' || lang === 'php';
+  const isFourSpaceLang = lang === 'python' || lang === 'cpp' || lang === 'c' || lang === 'java' || lang === 'csharp' || lang === 'go' || lang === 'rust' || lang === 'php' || lang === 'kotlin' || lang === 'swift';
   const indentStr = isFourSpaceLang ? '    ' : '  ';
 
   const formattedLines = lines.map(line => {
@@ -63,7 +68,7 @@ function getLanguageSnippets(monaco, lang, range) {
   const K = monaco.languages.CompletionItemKind;
   const R = monaco.languages.CompletionItemInsertTextRule;
 
-  if (lang === 'javascript' || lang === 'typescript') {
+  if (lang === 'javascript' || lang === 'typescript' || lang === 'react' || lang === 'jsx' || lang === 'tsx') {
     return [
       {
         label: 'if',
@@ -585,6 +590,64 @@ function getLanguageSnippets(monaco, lang, range) {
         insertText: '<?php\n\necho "${1:Hello PHP}";\n',
         insertTextRules: R.InsertAsSnippet,
         detail: 'PHP script starter',
+        range
+      }
+    ];
+  }
+
+  if (lang === 'kotlin') {
+    return [
+      {
+        label: 'main',
+        kind: K.Snippet,
+        insertText: 'fun main() {\n    println("${1:Hello Kotlin!}")\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Kotlin main entrypoint',
+        range
+      },
+      {
+        label: 'fun',
+        kind: K.Snippet,
+        insertText: 'fun ${1:functionName}(${2:params}): ${3:Unit} {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Function declaration',
+        range
+      },
+      {
+        label: 'dataClass',
+        kind: K.Snippet,
+        insertText: 'data class ${1:ClassName}(val ${2:param}: ${3:String})',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Data class definition',
+        range
+      }
+    ];
+  }
+
+  if (lang === 'swift') {
+    return [
+      {
+        label: 'main',
+        kind: K.Snippet,
+        insertText: 'import Foundation\n\nprint("${1:Hello Swift!}")',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Swift main script',
+        range
+      },
+      {
+        label: 'func',
+        kind: K.Snippet,
+        insertText: 'func ${1:functionName}(${2:params}) -> ${3:Void} {\n    ${0}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Swift function snippet',
+        range
+      },
+      {
+        label: 'struct',
+        kind: K.Snippet,
+        insertText: 'struct ${1:StructName} {\n    var ${2:name}: ${3:String}\n}',
+        insertTextRules: R.InsertAsSnippet,
+        detail: 'Swift struct snippet',
         range
       }
     ];

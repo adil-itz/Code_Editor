@@ -35,7 +35,7 @@ export function validateCodeSyntax(code, language = 'javascript') {
     return markers;
   }
 
-  if (lang === 'javascript' || lang === 'typescript' || lang === 'jsx' || lang === 'tsx') {
+  if (lang === 'javascript' || lang === 'typescript' || lang === 'jsx' || lang === 'tsx' || lang === 'react') {
     try {
       const wrapped = `(async function() {\n${code}\n})()`;
       new Function(wrapped);
