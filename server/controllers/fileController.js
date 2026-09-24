@@ -55,6 +55,29 @@ export async function getProjectFilesAndFolders(req, res) {
   }
 }
 
+async function ensureFolderHierarchy(projectId, folderPath) {
+  const parts = folderPath.split('/').filter(Boolean);
+  let currentPath = '';
+  let parentId = null;
+  let lastFolderDoc = null;
+
+  for (const part of parts) {
+    currentPath = currentPath ? `${currentPath}/${part}` : part;
+    let folderDoc = await Folder.findOne({ projectId, path: currentPath });
+    if (!folderDoc) {
+      folderDoc = await Folder.create({
+        projectId,
+        name: part,
+        path: currentPath,
+        parentId
+      });
+    }
+    parentId = folderDoc._id;
+    lastFolderDoc = folderDoc;
+  }
+  return lastFolderDoc;
+}
+
 export async function createFile(req, res) {
   try {
     const { projectId } = req.params;
@@ -86,15 +109,8 @@ export async function createFile(req, res) {
     let folderId = null;
     if (parts.length > 1) {
       const folderPath = parts.slice(0, -1).join('/');
-      let folderDoc = await Folder.findOne({ projectId, path: folderPath });
-      if (!folderDoc) {
-        folderDoc = await Folder.create({
-          projectId,
-          name: parts[parts.length - 2],
-          path: folderPath
-        });
-      }
-      folderId = folderDoc._id;
+      const folderDoc = await ensureFolderHierarchy(projectId, folderPath);
+      folderId = folderDoc ? folderDoc._id : null;
     }
 
     const lang = detectLanguage(fileNameOnly) || 'plaintext';
@@ -191,23 +207,14 @@ export async function createFolder(req, res) {
       return res.status(403).json({ message: 'Forbidden.' });
     }
 
-    if (!name) {
-      return res.status(400).json({ message: 'Folder name is required.' });
+    if (!name && !inputPath) {
+      return res.status(400).json({ message: 'Folder name or path is required.' });
     }
 
     const folderPath = inputPath || name;
-    const existing = await Folder.findOne({ projectId, path: folderPath });
-    if (existing) {
-      return res.json(existing);
-    }
+    const targetFolderDoc = await ensureFolderHierarchy(projectId, folderPath);
 
-    const newFolder = await Folder.create({
-      projectId,
-      name,
-      path: folderPath
-    });
-
-    return res.status(201).json(newFolder);
+    return res.status(201).json(targetFolderDoc);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
