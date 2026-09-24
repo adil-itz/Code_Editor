@@ -37,7 +37,21 @@ export function validateCodeSyntax(code, language = 'javascript') {
 
   if (lang === 'javascript' || lang === 'typescript' || lang === 'jsx' || lang === 'tsx' || lang === 'react') {
     try {
-      const wrapped = `(async function() {\n${code}\n})()`;
+      let sanitized = code
+        .replace(/^\s*import\s+.*$/gm, '')
+        .replace(/^\s*export\s+default\s+/gm, '')
+        .replace(/^\s*export\s+/gm, '');
+
+      if (lang === 'react' || lang === 'jsx' || lang === 'tsx' || /<[a-zA-Z0-9_\$><]/.test(sanitized)) {
+        sanitized = sanitized
+          .replace(/return\s*\(\s*<[\s\S]*?\);\s*}/g, 'return null; }')
+          .replace(/return\s*\(\s*<[\s\S]*?\);/g, 'return null;')
+          .replace(/return\s+<[\s\S]*?;/g, 'return null;')
+          .replace(/<[a-zA-Z0-9_\$]+[^>]*>[\s\S]*?<\/[a-zA-Z0-9_\$]+>/g, 'null')
+          .replace(/<[^>]+>/g, 'null');
+      }
+
+      const wrapped = `(async function() {\n${sanitized}\n})()`;
       new Function(wrapped);
     } catch (e) {
       let line = 1;

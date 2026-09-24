@@ -330,7 +330,9 @@ export function ProjectIDE() {
       }
 
       const newFile = await createFileApi(projectId, { name: filename, path: filePath });
-      setFiles(prev => [...prev, newFile]);
+      const updatedData = await fetchProjectFiles(projectId);
+      setFiles(updatedData.files || []);
+      setFolders(updatedData.folders || []);
       setFileContents(prev => ({ ...prev, [newFile.id || newFile._id]: '' }));
       handleOpenFile(newFile);
     } catch (err) {
@@ -342,8 +344,10 @@ export function ProjectIDE() {
     try {
       const parts = folderPath.split('/');
       const folderName = parts[parts.length - 1];
-      const newFolder = await createFolderApi(projectId, { name: folderName, path: folderPath });
-      setFolders(prev => [...prev, newFolder]);
+      await createFolderApi(projectId, { name: folderName, path: folderPath });
+      const updatedData = await fetchProjectFiles(projectId);
+      setFiles(updatedData.files || []);
+      setFolders(updatedData.folders || []);
     } catch (err) {
       alert(err.message);
     }
@@ -364,11 +368,9 @@ export function ProjectIDE() {
     if (!window.confirm('Delete folder and all enclosed files?')) return;
     try {
       await deleteFolderApi(folderId);
-      const folderDoc = folders.find(f => (f.id || f._id) === folderId);
-      if (folderDoc) {
-        setFiles(prev => prev.filter(f => !f.path.startsWith(`${folderDoc.path}/`)));
-        setFolders(prev => prev.filter(f => (f.id || f._id) !== folderId));
-      }
+      const updatedData = await fetchProjectFiles(projectId);
+      setFiles(updatedData.files || []);
+      setFolders(updatedData.folders || []);
     } catch (err) {
       alert(err.message);
     }
@@ -398,25 +400,36 @@ export function ProjectIDE() {
       const fId = f.id || f._id;
       const content = fileContents[fId] ?? f.sourceCode ?? '';
       const fName = f.name;
+      const fPath = f.path || f.name;
 
       if (!content) return;
 
-      if (f.language === 'css' || fName.endsWith('.css')) {
-        const escapedName = fName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const linkRegex = new RegExp(`<link[^>]*href=["'](?:\\./)?${escapedName}["'][^>]*>`, 'gi');
+      const pathVariants = [
+        fName,
+        `./${fName}`,
+        fPath,
+        `./${fPath}`,
+        `/${fPath}`
+      ];
 
-        if (linkRegex.test(bundled)) {
-          bundled = bundled.replace(linkRegex, `<style>${content}</style>`);
-        }
+      if (f.language === 'css' || fName.endsWith('.css')) {
+        pathVariants.forEach(pathStr => {
+          const escaped = pathStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const linkRegex = new RegExp(`<link[^>]*href=["']${escaped}["'][^>]*>`, 'gi');
+          if (linkRegex.test(bundled)) {
+            bundled = bundled.replace(linkRegex, `<style>\n${content}\n</style>`);
+          }
+        });
       }
 
-      if ((f.language === 'javascript' || fName.endsWith('.js')) && fName !== 'server.js') {
-        const escapedName = fName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const scriptRegex = new RegExp(`<script[^>]*src=["'](?:\\./)?${escapedName}["'][^>]*>\\s*</script>`, 'gi');
-
-        if (scriptRegex.test(bundled)) {
-          bundled = bundled.replace(scriptRegex, `<script>${content}</script>`);
-        }
+      if ((f.language === 'javascript' || f.language === 'react' || fName.endsWith('.js') || fName.endsWith('.jsx') || fName.endsWith('.tsx')) && fName !== 'server.js') {
+        pathVariants.forEach(pathStr => {
+          const escaped = pathStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const scriptRegex = new RegExp(`<script[^>]*src=["']${escaped}["'][^>]*>\\s*</script>`, 'gi');
+          if (scriptRegex.test(bundled)) {
+            bundled = bundled.replace(scriptRegex, `<script>\n${content}\n</script>`);
+          }
+        });
       }
     });
     return bundled;
@@ -591,8 +604,9 @@ export function ProjectIDE() {
       const ext = parts[parts.length - 1].toLowerCase();
       const extMap = {
         py: 'python',
-        js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
-        ts: 'typescript', tsx: 'typescript',
+        js: 'javascript', mjs: 'javascript', cjs: 'javascript',
+        jsx: 'react', tsx: 'react', react: 'react',
+        ts: 'typescript',
         html: 'html', htm: 'html',
         css: 'css', scss: 'css',
         cpp: 'cpp', cc: 'cpp', cxx: 'cpp', hpp: 'cpp', c: 'c', h: 'c',
@@ -603,11 +617,63 @@ export function ProjectIDE() {
         go: 'go',
         rs: 'rust',
         sql: 'sql',
-        json: 'json'
+        json: 'json',
+        kt: 'kotlin', kts: 'kotlin',
+        swift: 'swift'
       };
       if (extMap[ext]) return extMap[ext];
     }
     return (file.language || 'python').toLowerCase();
+  };
+
+  const buildReactPreviewHtml = (rawCode) => {
+    let cleanCode = (rawCode || '')
+      .replace(/import\s+React\s*(?:,\s*\{[^}]*\})?\s*from\s*["'][^"']+["'];?/g, '')
+      .replace(/import\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, '')
+      .replace(/export\s+default\s+function\s+/g, 'function ')
+      .replace(/export\s+function\s+/g, 'function ')
+      .replace(/export\s+default\s+/g, '');
+
+    const funcMatch = cleanCode.match(/function\s+([A-Z][a-zA-Z0-9_]*)/);
+    const constMatch = cleanCode.match(/const\s+([A-Z][a-zA-Z0-9_]*)\s*=/);
+    const compName = (funcMatch && funcMatch[1]) || (constMatch && constMatch[1]) || 'App';
+    const hasMount = cleanCode.includes('createRoot') || cleanCode.includes('ReactDOM.render');
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>React Live Preview</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    window.onerror = function(msg, url, line) {
+      document.getElementById('root').innerHTML = '<div style="color:#f87171;background:#450a0a;padding:16px;border-radius:12px;border:1px solid #991b1b;font-family:monospace;font-size:12px;"><strong>React Preview Error:</strong><br/>' + msg + ' (Line ' + line + ')</div>';
+    };
+
+    const { useState, useEffect, useContext, useRef, useMemo, useCallback, useReducer } = React;
+
+    ${cleanCode}
+
+    if (!window.__reactMounted) {
+      const targetComp = typeof ${compName} !== 'undefined' ? ${compName} : (typeof App !== 'undefined' ? App : null);
+      if (targetComp) {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(targetComp));
+        window.__reactMounted = true;
+      }
+    }
+  </script>
+</body>
+</html>`;
   };
 
   const handleRunCode = async (overrideStdin, customPrompts) => {
@@ -633,13 +699,19 @@ export function ProjectIDE() {
     const startTime = performance.now();
     try {
       const targetLang = getLanguageForFile(activeFile);
-      if (targetLang === 'html' || targetLang === 'css') {
-        const fullHtml = targetLang === 'css'
-          ? `<html><head><style>${currentCode}</style></head><body><div style="padding:20px;font-family:sans-serif;"><h1>CSS Preview</h1></div></body></html>`
-          : bundleWebProjectPreview(currentCode);
+      if (targetLang === 'html' || targetLang === 'css' || targetLang === 'react' || targetLang === 'jsx' || targetLang === 'tsx') {
+        let fullHtml = currentCode;
+        if (targetLang === 'css') {
+          fullHtml = `<html><head><style>${currentCode}</style></head><body><div style="padding:20px;font-family:sans-serif;"><h1>CSS Preview</h1></div></body></html>`;
+        } else if (targetLang === 'html') {
+          fullHtml = bundleWebProjectPreview(currentCode);
+        } else if (targetLang === 'react' || targetLang === 'jsx' || targetLang === 'tsx') {
+          fullHtml = buildReactPreviewHtml(currentCode);
+        }
+
         setHtmlPreview(fullHtml);
         setBottomTab('preview');
-        setOutput([{ type: 'log', text: 'Rendered live preview with connected CSS and JS files.' }]);
+        setOutput([{ type: 'log', text: 'Rendered live React web preview.' }]);
         setIsRunning(false);
         setIsWaitingForInput(false);
         return;
