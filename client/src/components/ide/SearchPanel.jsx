@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search as SearchIcon, FileCode, ArrowRight } from 'lucide-react';
+import { Search as SearchIcon, ArrowRight } from 'lucide-react';
+import { FileIcon } from './FileIcon';
 
 export function SearchPanel({ files, onOpenFile }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +60,7 @@ export function SearchPanel({ files, onOpenFile }) {
             >
               <div className="flex items-center justify-between text-brand-primary font-bold">
                 <span className="truncate flex items-center gap-1.5">
-                  <FileCode className="w-3.5 h-3.5" />
+                  <FileIcon filename={res.file.name} language={res.file.language} className="w-3.5 h-3.5" />
                   <span>{res.file.name}</span>
                 </span>
                 <span className="text-[10px] bg-brand-primary/10 px-1.5 py-0.5 rounded border border-brand-primary/20">

@@ -394,66 +394,201 @@ export function ProjectIDE() {
     }
   };
 
-  const bundleWebProjectPreview = (htmlCode) => {
+  const normalizePath = (p) => {
+    if (!p) return '';
+    return p.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+  };
+
+  const resolvePath = (baseDir, relativePath) => {
+    if (!relativePath) return '';
+    let cleanRel = relativePath.replace(/\\/g, '/');
+    cleanRel = cleanRel.split('?')[0].split('#')[0];
+    let baseDirClean = normalizePath(baseDir);
+
+    if (cleanRel.startsWith('/')) {
+      cleanRel = cleanRel.replace(/^\/+/, '');
+      baseDirClean = '';
+    }
+
+    const baseParts = baseDirClean ? baseDirClean.split('/') : [];
+    const relParts = cleanRel.split('/');
+
+    const stack = [...baseParts];
+    for (const part of relParts) {
+      if (part === '' || part === '.') continue;
+      if (part === '..') {
+        if (stack.length > 0) stack.pop();
+      } else {
+        stack.push(part);
+      }
+    }
+    return stack.join('/');
+  };
+
+  const findProjectFile = (refPath, currentFileDir, fileList, contentsMap) => {
+    if (!refPath) return null;
+
+    const resolvedTarget = resolvePath(currentFileDir, refPath);
+    const directTarget = resolvePath('', refPath);
+    const filenameTarget = refPath.split('?')[0].split('#')[0].replace(/\\/g, '/').split('/').pop();
+
+    let exactMatch = null;
+    let directMatch = null;
+    let filenameMatch = null;
+
+    for (const f of fileList) {
+      const fId = f.id || f._id;
+      const fNormPath = normalizePath(f.path || f.name);
+      const fName = (f.name || '').replace(/\\/g, '/').split('/').pop();
+      const content = contentsMap[fId] ?? f.sourceCode ?? '';
+
+      if (fNormPath === resolvedTarget) {
+        exactMatch = { file: f, content, normPath: fNormPath };
+        break;
+      }
+      if (fNormPath === directTarget) {
+        directMatch = { file: f, content, normPath: fNormPath };
+      }
+      if (fName === filenameTarget) {
+        filenameMatch = { file: f, content, normPath: fNormPath };
+      }
+    }
+
+    return exactMatch || directMatch || filenameMatch;
+  };
+
+  const resolveCssImports = (cssContent, cssFileDir, fileList, contentsMap, visited = new Set()) => {
+    if (!cssContent) return '';
+    return cssContent.replace(/@import\s+(?:url\(['"]?([^'"\)]+)['"]?\)|['"]([^'"]+)['"])\s*;?/gi, (match, urlPath, strPath) => {
+      const importPath = urlPath || strPath;
+      if (!importPath) return match;
+
+      if (importPath.startsWith('http://') || importPath.startsWith('https://') || importPath.startsWith('//')) {
+        return match;
+      }
+
+      const target = findProjectFile(importPath, cssFileDir, fileList, contentsMap);
+      if (target) {
+        if (visited.has(target.normPath)) {
+          return `/* Circular import skipped: ${target.normPath} */`;
+        }
+        visited.add(target.normPath);
+        const subDir = target.normPath.includes('/') ? target.normPath.substring(0, target.normPath.lastIndexOf('/')) : '';
+        const resolvedSub = resolveCssImports(target.content, subDir, fileList, contentsMap, visited);
+        return `/* Imported from ${target.normPath} */\n${resolvedSub}`;
+      }
+      return match;
+    });
+  };
+
+  const bundleWebProjectPreview = (htmlCode, targetFile = activeFile) => {
     let bundled = htmlCode || '';
+    const htmlPath = targetFile ? (targetFile.path || targetFile.name || '') : '';
+    const normHtmlPath = normalizePath(htmlPath);
+    const htmlDir = normHtmlPath.includes('/') ? normHtmlPath.substring(0, normHtmlPath.lastIndexOf('/')) : '';
+
+    // 1. Process <link ...> tags (for CSS and stylesheets)
+    bundled = bundled.replace(/<link\s+[^>]*>/gi, (linkTag) => {
+      const hrefMatch = linkTag.match(/href=["']([^"']+)["']/i);
+      const relMatch = linkTag.match(/rel=["']([^"']+)["']/i);
+      const relValue = relMatch ? relMatch[1].toLowerCase() : '';
+
+      if (!hrefMatch) return linkTag;
+      const hrefVal = hrefMatch[1];
+
+      if (hrefVal.startsWith('http://') || hrefVal.startsWith('https://') || hrefVal.startsWith('//')) {
+        return linkTag;
+      }
+
+      const isCssLink = relValue.includes('stylesheet') || hrefVal.split('?')[0].endsWith('.css');
+      if (!isCssLink) return linkTag;
+
+      const matched = findProjectFile(hrefVal, htmlDir, files, fileContents);
+      if (matched) {
+        const cssDir = matched.normPath.includes('/') ? matched.normPath.substring(0, matched.normPath.lastIndexOf('/')) : '';
+        const processedCss = resolveCssImports(matched.content, cssDir, files, fileContents, new Set([matched.normPath]));
+        return `<style data-file="${matched.normPath}">\n/* Connected: ${matched.normPath} */\n${processedCss}\n</style>`;
+      }
+      return linkTag;
+    });
+
+    // 2. Process <script ... src="..."> tags (for JavaScript / JSX / TS)
+    bundled = bundled.replace(/<script\s+[^>]*>([\s\S]*?)<\/script>/gi, (scriptBlock, innerCode) => {
+      const srcMatch = scriptBlock.match(/src=["']([^"']+)["']/i);
+      if (!srcMatch) return scriptBlock;
+
+      const srcVal = srcMatch[1];
+      if (srcVal.startsWith('http://') || srcVal.startsWith('https://') || srcVal.startsWith('//')) {
+        return scriptBlock;
+      }
+
+      const matched = findProjectFile(srcVal, htmlDir, files, fileContents);
+      if (matched) {
+        const typeMatch = scriptBlock.match(/type=["']([^"']+)["']/i);
+        const scriptTypeAttr = typeMatch ? ` type="${typeMatch[1]}"` : '';
+        return `<script${scriptTypeAttr} data-file="${matched.normPath}">\n/* Connected: ${matched.normPath} */\n${matched.content}\n</script>`;
+      }
+      return scriptBlock;
+    });
+
+    // 3. Process self-closing <script ... src="..." /> tags if any
+    bundled = bundled.replace(/<script\s+[^>]*src=["']([^"']+)["'][^>]*\/>/gi, (scriptTag, srcVal) => {
+      if (srcVal.startsWith('http://') || srcVal.startsWith('https://') || srcVal.startsWith('//')) {
+        return scriptTag;
+      }
+
+      const matched = findProjectFile(srcVal, htmlDir, files, fileContents);
+      if (matched) {
+        return `<script data-file="${matched.normPath}">\n/* Connected: ${matched.normPath} */\n${matched.content}\n</script>`;
+      }
+      return scriptTag;
+    });
+
+    // 4. Fallback for unhandled CSS links (if tag syntax was slightly irregular)
     files.forEach(f => {
       const fId = f.id || f._id;
       const content = fileContents[fId] ?? f.sourceCode ?? '';
-      const fName = f.name;
-      const fPath = f.path || f.name;
+      const fNormPath = normalizePath(f.path || f.name);
+      const fName = (f.name || '').replace(/\\/g, '/').split('/').pop();
 
       if (!content) return;
 
-      const pathVariants = [
-        fName,
-        `./${fName}`,
-        fPath,
-        `./${fPath}`,
-        `/${fPath}`
-      ];
-
       if (f.language === 'css' || fName.endsWith('.css')) {
-        pathVariants.forEach(pathStr => {
-          const escaped = pathStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const linkRegex = new RegExp(`<link[^>]*href=["']${escaped}["'][^>]*>`, 'gi');
-          if (linkRegex.test(bundled)) {
-            bundled = bundled.replace(linkRegex, `<style>\n${content}\n</style>`);
-          }
-        });
-      }
-
-      if ((f.language === 'javascript' || f.language === 'react' || fName.endsWith('.js') || fName.endsWith('.jsx') || fName.endsWith('.tsx')) && fName !== 'server.js') {
-        pathVariants.forEach(pathStr => {
-          const escaped = pathStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const scriptRegex = new RegExp(`<script[^>]*src=["']${escaped}["'][^>]*>\\s*</script>`, 'gi');
-          if (scriptRegex.test(bundled)) {
-            bundled = bundled.replace(scriptRegex, `<script>\n${content}\n</script>`);
-          }
-        });
+        const safePath = fNormPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const safeName = fName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const fallbackRegex = new RegExp(`<link[^>]*href=["'](?:[^"']*/)?(${safeName}|${safePath})["'][^>]*>`, 'gi');
+        if (fallbackRegex.test(bundled)) {
+          const cssDir = fNormPath.includes('/') ? fNormPath.substring(0, fNormPath.lastIndexOf('/')) : '';
+          const processedCss = resolveCssImports(content, cssDir, files, fileContents, new Set([fNormPath]));
+          bundled = bundled.replace(fallbackRegex, `<style data-file="${fNormPath}">\n${processedCss}\n</style>`);
+        }
       }
     });
+
     return bundled;
   };
 
   const isFileReferenced = (file, code) => {
     if (!code) return false;
     const fName = file.name;
-    const fPath = file.path || file.name;
+    const fNormPath = normalizePath(file.path || file.name);
 
-    if (code.includes(fName) || code.includes(fPath)) return true;
+    if (code.includes(fName) || code.includes(fNormPath)) return true;
 
     if (fName.endsWith('.py')) {
       const moduleName = fName.replace('.py', '');
-      const importRegex = new RegExp(`\\b(import|from)\\s+${moduleName}\\b`, 'g');
+      const dottedPath = fNormPath.replace('.py', '').replace(/\//g, '.');
+      const importRegex = new RegExp(`\\b(import|from)\\s+(${moduleName}|${dottedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
       if (importRegex.test(code)) return true;
     }
     if (fName.endsWith('.js') || fName.endsWith('.ts') || fName.endsWith('.jsx') || fName.endsWith('.tsx')) {
       const moduleName = fName.replace(/\.(js|ts|jsx|tsx)$/, '');
-      if (code.includes(moduleName)) return true;
+      const pathWithoutExt = fNormPath.replace(/\.(js|ts|jsx|tsx)$/, '');
+      if (code.includes(moduleName) || code.includes(pathWithoutExt)) return true;
     }
     if (fName.endsWith('.h') || fName.endsWith('.hpp') || fName.endsWith('.c') || fName.endsWith('.cpp')) {
       const baseName = fName.replace(/\.(h|hpp|c|cpp)$/, '');
-      if (code.includes(fName) || code.includes(baseName)) return true;
+      if (code.includes(fName) || code.includes(baseName) || code.includes(fNormPath)) return true;
     }
     if (fName.endsWith('.java')) {
       const className = fName.replace('.java', '');
@@ -482,23 +617,24 @@ export function ProjectIDE() {
       referencedFiles.forEach(f => {
         const fId = f.id || f._id;
         const content = contentsMap[fId] ?? f.sourceCode ?? '';
-        const fPath = f.path || f.name;
+        const fNormPath = normalizePath(f.path || f.name);
 
         if (f.name.endsWith('.py')) {
           if (content) {
             pyHelpers += content + '\n\n';
             const moduleName = f.name.replace('.py', '');
-            const importRegex1 = new RegExp(`^from\\s+${moduleName}\\s+import\\s+.*$`, 'gm');
-            const importRegex2 = new RegExp(`^import\\s+${moduleName}.*$`, 'gm');
+            const dottedPath = fNormPath.replace('.py', '').replace(/\//g, '.');
+            const importRegex1 = new RegExp(`^from\\s+(${moduleName}|${dottedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\s+import\\s+.*$`, 'gm');
+            const importRegex2 = new RegExp(`^import\\s+(${moduleName}|${dottedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}).*$`, 'gm');
             code = code.replace(importRegex1, '');
             code = code.replace(importRegex2, '');
           }
         } else {
           if (!bootstrapper) bootstrapper = 'import os\n\n';
           const serialized = JSON.stringify(content);
-          bootstrapper += `_d = os.path.dirname(${JSON.stringify(fPath)})\n`;
+          bootstrapper += `_d = os.path.dirname(${JSON.stringify(fNormPath)})\n`;
           bootstrapper += `if _d: os.makedirs(_d, exist_ok=True)\n`;
-          bootstrapper += `with open(${JSON.stringify(fPath)}, "w", encoding="utf-8") as _f:\n`;
+          bootstrapper += `with open(${JSON.stringify(fNormPath)}, "w", encoding="utf-8") as _f:\n`;
           bootstrapper += `    _f.write(${serialized})\n\n`;
         }
       });
@@ -513,11 +649,13 @@ export function ProjectIDE() {
       referencedFiles.forEach(f => {
         const fId = f.id || f._id;
         const fName = f.name;
+        const fNormPath = normalizePath(f.path || f.name);
         const content = contentsMap[fId] ?? f.sourceCode ?? '';
         if (!content) return;
 
         const escapedName = fName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const incRegex = new RegExp(`#include\\s+["'](?:\\./)?${escapedName}["']`, 'gi');
+        const escapedPath = fNormPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const incRegex = new RegExp(`#include\\s+["'](?:\\./)?(?:${escapedName}|${escapedPath})["']`, 'gi');
 
         if (incRegex.test(code)) {
           code = code.replace(incRegex, content);
@@ -527,7 +665,7 @@ export function ProjectIDE() {
           code = code + '\n' + content;
         } else {
           const serialized = JSON.stringify(content);
-          bootstrapperCode += `  f = fopen(${JSON.stringify(fName)}, "w"); if (f) { fputs(${serialized}, f); fclose(f); }\n`;
+          bootstrapperCode += `  f = fopen(${JSON.stringify(fNormPath)}, "w"); if (f) { fputs(${serialized}, f); fclose(f); }\n`;
         }
       });
 
@@ -545,6 +683,7 @@ export function ProjectIDE() {
       referencedFiles.forEach(f => {
         const fId = f.id || f._id;
         const content = contentsMap[fId] ?? f.sourceCode ?? '';
+        const fNormPath = normalizePath(f.path || f.name);
         if (!content) return;
 
         if (f.name.endsWith('.java')) {
@@ -552,7 +691,7 @@ export function ProjectIDE() {
           code += '\n\n' + clean;
         } else {
           const serialized = JSON.stringify(content);
-          fileBootstrap += `        try { java.nio.file.Files.write(java.nio.file.Paths.get(${JSON.stringify(f.name)}), ${serialized}.getBytes(java.nio.charset.StandardCharsets.UTF_8)); } catch (Exception e) {}\n`;
+          fileBootstrap += `        try { java.nio.file.Files.write(java.nio.file.Paths.get(${JSON.stringify(fNormPath)}), ${serialized}.getBytes(java.nio.charset.StandardCharsets.UTF_8)); } catch (Exception e) {}\n`;
         }
       });
 
@@ -572,7 +711,7 @@ export function ProjectIDE() {
       referencedFiles.forEach(f => {
         const fId = f.id || f._id;
         const content = contentsMap[fId] ?? f.sourceCode ?? '';
-        const fPath = f.path || f.name;
+        const fNormPath = normalizePath(f.path || f.name);
 
         if (f.name.endsWith('.js') || f.name.endsWith('.ts')) {
           if (content) {
@@ -584,9 +723,10 @@ export function ProjectIDE() {
         } else {
           if (!bootstrapper) bootstrapper = 'const fs = require("fs");\nconst path = require("path");\n\n';
           const serialized = JSON.stringify(content);
-          bootstrapper += `const _d_${fId.replace(/[^a-zA-Z0-9]/g, '_')} = path.dirname(${JSON.stringify(fPath)});\n`;
-          bootstrapper += `if (_d_${fId.replace(/[^a-zA-Z0-9]/g, '_')} && _d_${fId.replace(/[^a-zA-Z0-9]/g, '_')} !== ".") fs.mkdirSync(_d_${fId.replace(/[^a-zA-Z0-9]/g, '_')}, { recursive: true });\n`;
-          bootstrapper += `fs.writeFileSync(${JSON.stringify(fPath)}, ${serialized}, "utf-8");\n\n`;
+          const safeVar = fId.replace(/[^a-zA-Z0-9]/g, '_');
+          bootstrapper += `const _d_${safeVar} = path.dirname(${JSON.stringify(fNormPath)});\n`;
+          bootstrapper += `if (_d_${safeVar} && _d_${safeVar} !== ".") fs.mkdirSync(_d_${safeVar}, { recursive: true });\n`;
+          bootstrapper += `fs.writeFileSync(${JSON.stringify(fNormPath)}, ${serialized}, "utf-8");\n\n`;
         }
       });
 
