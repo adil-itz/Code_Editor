@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { 
   FilePlus, 
   FolderPlus, 
-  FileCode, 
-  Folder, 
-  FolderOpen, 
   ChevronRight, 
   ChevronDown, 
   Trash2, 
@@ -12,6 +9,7 @@ import {
   Check,
   X
 } from 'lucide-react';
+import { FileIcon } from './FileIcon';
 
 export function Explorer({ files = [], folders = [], activeFileId, onOpenFile, onCreateFile, onCreateFolder, onDeleteFile, onDeleteFolder, onRenameFile, onCloseMobile }) {
   const [activeCreateFileInput, setActiveCreateFileInput] = useState(null);
@@ -69,7 +67,7 @@ export function Explorer({ files = [], folders = [], activeFileId, onOpenFile, o
         }`}
       >
         <div className="flex items-center gap-2 truncate pr-2">
-          <FileCode className="w-4 h-4 shrink-0 text-brand-primary" />
+          <FileIcon filename={file.name} language={file.language} className="w-4 h-4" />
           {isEditing ? (
             <form onSubmit={(e) => handleRenameSubmit(file.id || file._id, e)} className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
               <input
@@ -140,7 +138,7 @@ export function Explorer({ files = [], folders = [], activeFileId, onOpenFile, o
         >
           <div className="flex items-center gap-1.5 truncate">
             {isCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
-            {isCollapsed ? <Folder className="w-4 h-4 text-status-warning" /> : <FolderOpen className="w-4 h-4 text-status-warning" />}
+            <FileIcon isFolder isOpen={!isCollapsed} className="w-4 h-4" />
             <span className="truncate">{folder.name}</span>
           </div>
 

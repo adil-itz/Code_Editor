@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, FileCode, Circle } from 'lucide-react';
+import { X, Circle } from 'lucide-react';
+import { FileIcon } from './FileIcon';
 
 export function EditorTabs({ openFiles = [], activeFileId, activeFile, dirtyFiles = {}, onSelectTab, onCloseTab, onCloseOthers, onCloseAll }) {
   if (!openFiles || openFiles.length === 0) return null;
@@ -13,6 +14,7 @@ export function EditorTabs({ openFiles = [], activeFileId, activeFile, dirtyFile
           const isString = typeof file === 'string';
           const fileId = isString ? file : (file.id || file._id || file.name);
           const fileName = isString ? file : (file.name || file.path || 'Untitled');
+          const fileLang = isString ? '' : (file.language || '');
           const isActive = fileId === currentActive || fileName === currentActive;
           const isDirty = !isString && !!dirtyFiles[fileId];
 
@@ -26,7 +28,7 @@ export function EditorTabs({ openFiles = [], activeFileId, activeFile, dirtyFile
                   : 'bg-bg-deep border-transparent text-text-muted hover:text-text-primary hover:bg-surface-elevated'
               }`}
             >
-              <FileCode className="w-3.5 h-3.5 shrink-0 text-brand-primary" />
+              <FileIcon filename={fileName} language={fileLang} className="w-3.5 h-3.5" />
               <span className="truncate text-xs">
                 {fileName}{isDirty ? ' *' : ''}
               </span>
