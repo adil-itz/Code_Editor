@@ -15,14 +15,20 @@ import {
   CheckCircle2,
   FileCode,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Bookmark
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ExecutionHistoryModal } from '../components/ide/ExecutionHistoryModal';
+import { SavedSnippetsModal } from '../components/ide/SavedSnippetsModal';
 
 export function UserDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isSnippetsOpen, setIsSnippetsOpen] = useState(false);
 
   const projects = [
     { id: '1', title: 'React Canvas IDE Component', language: 'JavaScript', updated: '2 hours ago', status: 'Active', stars: 14 },
@@ -267,6 +273,24 @@ export function UserDashboard() {
                 ))}
               </div>
 
+              <div className="pt-2 border-t border-border-main space-y-2">
+                <button
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="w-full py-2.5 rounded-xl bg-surface-elevated hover:bg-surface border border-border-main text-text-primary font-bold text-xs font-mono text-center flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Clock className="w-4 h-4 text-brand-primary" />
+                  <span>View Execution History</span>
+                </button>
+
+                <button
+                  onClick={() => setIsSnippetsOpen(true)}
+                  className="w-full py-2.5 rounded-xl bg-surface-elevated hover:bg-surface border border-border-main text-text-primary font-bold text-xs font-mono text-center flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Bookmark className="w-4 h-4 text-brand-primary" />
+                  <span>View Saved Code Snippets</span>
+                </button>
+              </div>
+
               <Link
                 to="/editor"
                 className="w-full py-2.5 rounded-xl bg-brand-primary hover:bg-brand-hover text-bg-deep font-bold text-xs font-mono text-center flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
@@ -280,6 +304,22 @@ export function UserDashboard() {
         </div>
 
       </div>
+
+      <ExecutionHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onLoadCode={(code) => {
+          navigate('/editor');
+        }}
+      />
+
+      <SavedSnippetsModal
+        isOpen={isSnippetsOpen}
+        onClose={() => setIsSnippetsOpen(false)}
+        onLoadCode={(code) => {
+          navigate('/editor');
+        }}
+      />
     </div>
   );
 }
