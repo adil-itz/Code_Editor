@@ -17,6 +17,10 @@ const executionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  code: {
+    type: String,
+    default: ''
+  },
   judge0LanguageId: {
     type: Number,
     required: true

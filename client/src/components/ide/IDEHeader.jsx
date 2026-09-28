@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Save, Terminal, CheckCircle2, ArrowLeft, PanelBottom, Palette, FolderTree, Share2 } from 'lucide-react';
+import { Play, Save, Terminal, CheckCircle2, ArrowLeft, PanelBottom, Palette, FolderTree, Share2, Clock, Bookmark } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function IDEHeader({ 
@@ -16,6 +16,8 @@ export function IDEHeader({
   onSave, 
   onRun, 
   onShare,
+  onOpenHistory,
+  onOpenSnippets,
   onOpenCommandPalette 
 }) {
   return (
@@ -104,6 +106,28 @@ export function IDEHeader({
           <span>Commands...</span>
           <kbd className="bg-bg-deep px-1.5 py-0.5 rounded border border-border-main text-[10px]">Ctrl+K</kbd>
         </button>
+
+        {onOpenHistory && (
+          <button
+            onClick={onOpenHistory}
+            className="px-2.5 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Execution History Logs"
+          >
+            <Clock className="w-3.5 h-3.5 text-brand-primary" />
+            <span className="hidden sm:inline text-[11px]">History</span>
+          </button>
+        )}
+
+        {onOpenSnippets && (
+          <button
+            onClick={onOpenSnippets}
+            className="px-2.5 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Saved Code Snippets"
+          >
+            <Bookmark className="w-3.5 h-3.5 text-brand-primary" />
+            <span className="hidden sm:inline text-[11px]">Snippets</span>
+          </button>
+        )}
 
         {onShare && (
           <button

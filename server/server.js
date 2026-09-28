@@ -6,6 +6,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import executeRoutes from './routes/executeRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import shareRoutes from './routes/shareRoutes.js';
+import snippetRoutes from './routes/snippetRoutes.js';
 import { connectDB } from './db/connect.js';
 import { seedAdminUser } from './db/userStore.js';
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/execute', executeRoutes);
 app.use('/api/share', shareRoutes);
+app.use('/api/snippets', snippetRoutes);
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/projects', projectRoutes);
 

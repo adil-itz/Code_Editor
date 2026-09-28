@@ -26,6 +26,10 @@ import {
 import { tokenizeCode, getTokenColorClass } from '../../utils/syntaxHighlighter';
 import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedTerminalOutput } from '../../utils/interactiveInput';
 import { ShareModal } from './ShareModal';
+import { ExecutionHistoryModal } from './ExecutionHistoryModal';
+import { SavedSnippetsModal } from './SavedSnippetsModal';
+import { saveLocalExecutionHistory } from '../../services/historyService';
+import { createSavedSnippetApi } from '../../services/snippetService';
 
 const LANGUAGES_LIST = [
   { id: 'react', name: 'React (JSX)', ext: 'jsx', category: 'Frontend Framework' },
@@ -541,6 +545,8 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
   const [validationNotice, setValidationNotice] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isSnippetsModalOpen, setIsSnippetsModalOpen] = useState(false);
   const [stdin, setStdin] = useState('');
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPromptText, setInputPromptText] = useState('');
@@ -803,21 +809,14 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
     await handleRunCode(newStdin, updatedPrompts);
   };
 
-  // Save Snippet
-  const handleSaveSnippet = () => {
-    const newSnippet = {
-      id: Date.now().toString(),
-      title: fileName,
-      language,
-      code,
-      date: new Date().toLocaleDateString()
-    };
-
-    const updated = [newSnippet, ...savedSnippets];
-    setSavedSnippets(updated);
+  const handleSaveSnippet = async () => {
     try {
-      localStorage.setItem('devspace_user_snippets', JSON.stringify(updated));
-      setSavedSuccess('Snippet saved to profile!');
+      await createSavedSnippetApi({
+        title: fileName,
+        language,
+        code
+      });
+      setSavedSuccess('Snippet saved successfully!');
       setTimeout(() => setSavedSuccess(''), 3000);
     } catch (e) {
       console.error(e);
@@ -947,6 +946,22 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
             className="p-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            title="Execution History Logs"
+            className="p-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+          >
+            <Clock className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setIsSnippetsModalOpen(true)}
+            title="Saved Code Snippets"
+            className="p-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+          >
+            <Bookmark className="w-4 h-4" />
           </button>
 
           <button
@@ -1206,6 +1221,31 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         title={fileName}
         language={language}
         code={code}
+      />
+      <ExecutionHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onLoadCode={(loadedCode, loadedLang) => {
+          if (loadedCode) setCode(loadedCode);
+          if (loadedLang) setLanguage(loadedLang);
+        }}
+      />
+      <SavedSnippetsModal
+        isOpen={isSnippetsModalOpen}
+        onClose={() => setIsSnippetsModalOpen(false)}
+        currentCode={code}
+        currentLanguage={language}
+        currentTitle={fileName}
+        onLoadCode={(loadedCode, loadedLang) => {
+          if (loadedCode) setCode(loadedCode);
+          if (loadedLang) setLanguage(loadedLang);
+        }}
+        onShareCode={(sharedCode, sharedLang, sharedTitle) => {
+          setCode(sharedCode);
+          setLanguage(sharedLang);
+          setFileName(sharedTitle || fileName);
+          setIsShareModalOpen(true);
+        }}
       />
     </div>
   );

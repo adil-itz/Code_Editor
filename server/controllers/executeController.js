@@ -1,4 +1,6 @@
 import Execution from '../models/Execution.js';
+import jwt from 'jsonwebtoken';
+import { findUserById } from '../db/userStore.js';
 
 const JUDGE0_LANG_IDS = {
   javascript: 63,
@@ -178,13 +180,23 @@ export async function executeCodeController(req, res) {
       status: result.status?.description || 'Executed'
     };
 
-    if (req.user && req.user.id) {
+    let userId = req.user?.id;
+    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'devspace_super_secret_jwt_key_2026_x89f');
+        userId = decoded.id;
+      } catch (e) {}
+    }
+
+    if (userId) {
       try {
         await Execution.create({
-          user: req.user.id,
+          user: userId,
           project: projectId || null,
           file: fileId || null,
           language: lowerLang,
+          code: code || '',
           judge0LanguageId: languageId,
           stdin: stdin || '',
           stdout: outputPayload.stdout,
@@ -200,6 +212,31 @@ export async function executeCodeController(req, res) {
     return res.json(outputPayload);
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Code execution engine error.' });
+  }
+}
+
+export async function getExecutionHistory(req, res) {
+  try {
+    let userId = req.user?.id;
+    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'devspace_super_secret_jwt_key_2026_x89f');
+        userId = decoded.id;
+      } catch (e) {}
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required to view execution history.' });
+    }
+
+    const history = await Execution.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    return res.json(history);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 }
 

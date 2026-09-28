@@ -26,6 +26,8 @@ import { CommandPalette } from '../components/ide/CommandPalette';
 import { ProblemsPanel } from '../components/ide/ProblemsPanel';
 import { StatusBar } from '../components/ide/StatusBar';
 import { ShareModal } from '../components/ide/ShareModal';
+import { ExecutionHistoryModal } from '../components/ide/ExecutionHistoryModal';
+import { SavedSnippetsModal } from '../components/ide/SavedSnippetsModal';
 import { Terminal, Terminal as TerminalIcon, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
@@ -105,6 +107,8 @@ export function ProjectIDE() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isSnippetsOpen, setIsSnippetsOpen] = useState(false);
 
   const handleMouseDownResize = (e) => {
     e.preventDefault();
@@ -960,6 +964,8 @@ export function ProjectIDE() {
         onSave={handleSaveActiveFile}
         onRun={handleRunCode}
         onShare={() => setIsShareModalOpen(true)}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenSnippets={() => setIsSnippetsOpen(true)}
         onOpenCommandPalette={() => setIsPaletteOpen(true)}
       />
 
@@ -1169,6 +1175,35 @@ export function ProjectIDE() {
         code={fileContents[activeFileId] ?? activeFile?.sourceCode ?? ''}
         files={files}
         template={project?.template || 'empty'}
+      />
+
+      <ExecutionHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onLoadCode={(loadedCode) => {
+          if (activeFileId && loadedCode !== undefined) {
+            handleCodeChange(loadedCode);
+          }
+        }}
+      />
+
+      <SavedSnippetsModal
+        isOpen={isSnippetsOpen}
+        onClose={() => setIsSnippetsOpen(false)}
+        currentCode={fileContents[activeFileId] ?? activeFile?.sourceCode ?? ''}
+        currentLanguage={activeFile?.language || project?.defaultLanguage || 'javascript'}
+        currentTitle={activeFile?.name || project?.name || ''}
+        onLoadCode={(loadedCode) => {
+          if (activeFileId && loadedCode !== undefined) {
+            handleCodeChange(loadedCode);
+          }
+        }}
+        onShareCode={(sharedCode, sharedLang, sharedTitle) => {
+          if (activeFileId && sharedCode !== undefined) {
+            handleCodeChange(sharedCode);
+          }
+          setIsShareModalOpen(true);
+        }}
       />
 
       <CommandPalette
