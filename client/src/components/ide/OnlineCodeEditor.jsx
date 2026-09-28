@@ -20,10 +20,12 @@ import {
   Bookmark,
   Layers,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Share2
 } from 'lucide-react';
 import { tokenizeCode, getTokenColorClass } from '../../utils/syntaxHighlighter';
 import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedTerminalOutput } from '../../utils/interactiveInput';
+import { ShareModal } from './ShareModal';
 
 const LANGUAGES_LIST = [
   { id: 'react', name: 'React (JSX)', ext: 'jsx', category: 'Frontend Framework' },
@@ -538,6 +540,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
   const [savedSuccess, setSavedSuccess] = useState('');
   const [validationNotice, setValidationNotice] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [stdin, setStdin] = useState('');
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPromptText, setInputPromptText] = useState('');
@@ -947,6 +950,14 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
           </button>
 
           <button
+            onClick={() => setIsShareModalOpen(true)}
+            title="Share Code via Link"
+            className="p-1.5 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/30 text-brand-primary transition-colors cursor-pointer flex items-center gap-1"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+
+          <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             className="p-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
@@ -1189,6 +1200,13 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         </div>
 
       </div>
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={fileName}
+        language={language}
+        code={code}
+      />
     </div>
   );
 }
