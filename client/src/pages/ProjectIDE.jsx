@@ -25,6 +25,7 @@ import { PreviewPanel } from '../components/ide/PreviewPanel';
 import { CommandPalette } from '../components/ide/CommandPalette';
 import { ProblemsPanel } from '../components/ide/ProblemsPanel';
 import { StatusBar } from '../components/ide/StatusBar';
+import { ShareModal } from '../components/ide/ShareModal';
 import { Terminal, Terminal as TerminalIcon, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
@@ -103,6 +104,7 @@ export function ProjectIDE() {
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const handleMouseDownResize = (e) => {
     e.preventDefault();
@@ -957,6 +959,7 @@ export function ProjectIDE() {
         onThemeChange={handleThemeChange}
         onSave={handleSaveActiveFile}
         onRun={handleRunCode}
+        onShare={() => setIsShareModalOpen(true)}
         onOpenCommandPalette={() => setIsPaletteOpen(true)}
       />
 
@@ -1157,6 +1160,16 @@ export function ProjectIDE() {
           </div>
         </div>
       </div>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={activeFile?.name || project?.name || 'Project Code'}
+        language={activeFile?.language || project?.defaultLanguage || 'javascript'}
+        code={fileContents[activeFileId] ?? activeFile?.sourceCode ?? ''}
+        files={files}
+        template={project?.template || 'empty'}
+      />
 
       <CommandPalette
         isOpen={isPaletteOpen}

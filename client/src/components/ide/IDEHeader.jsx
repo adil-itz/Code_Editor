@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Save, Terminal, CheckCircle2, ArrowLeft, PanelBottom, Palette, FolderTree } from 'lucide-react';
+import { Play, Save, Terminal, CheckCircle2, ArrowLeft, PanelBottom, Palette, FolderTree, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function IDEHeader({ 
@@ -15,6 +15,7 @@ export function IDEHeader({
   onThemeChange, 
   onSave, 
   onRun, 
+  onShare,
   onOpenCommandPalette 
 }) {
   return (
@@ -103,6 +104,17 @@ export function IDEHeader({
           <span>Commands...</span>
           <kbd className="bg-bg-deep px-1.5 py-0.5 rounded border border-border-main text-[10px]">Ctrl+K</kbd>
         </button>
+
+        {onShare && (
+          <button
+            onClick={onShare}
+            className="px-2.5 py-1.5 sm:px-3 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/30 text-brand-primary font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Share Code Link"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-[11px]">Share</span>
+          </button>
+        )}
 
         <button
           onClick={onSave}

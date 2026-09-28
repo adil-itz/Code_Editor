@@ -12,6 +12,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { WorkspaceHome } from './pages/WorkspaceHome';
 import { ProjectIDE } from './pages/ProjectIDE';
+import { SharedCodePage } from './pages/SharedCodePage';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, openAuthModal } = useAuth();
@@ -115,6 +116,14 @@ export default function App() {
                     <ProtectedRoute>
                       <EditorPage />
                     </ProtectedRoute>
+                  </StandardLayout>
+                } 
+              />
+              <Route 
+                path="/share/:shareId" 
+                element={
+                  <StandardLayout>
+                    <SharedCodePage />
                   </StandardLayout>
                 } 
               />
