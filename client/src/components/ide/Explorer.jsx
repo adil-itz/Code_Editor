@@ -7,7 +7,9 @@ import {
   Trash2, 
   Edit2, 
   Check,
-  X
+  X,
+  FileCode,
+  Folder
 } from 'lucide-react';
 import { FileIcon } from './FileIcon';
 

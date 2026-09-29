@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   fetchProjectDetails,
@@ -11,6 +12,7 @@ import {
   executeCodeApi
 } from '../services/projectService';
 import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedTerminalOutput } from '../utils/interactiveInput';
+import { getBoilerplateForFilename } from '../utils/boilerplateTemplates';
 import { IDEHeader } from '../components/ide/IDEHeader';
 import { ActivityBar } from '../components/ide/ActivityBar';
 import { Explorer } from '../components/ide/Explorer';
@@ -335,12 +337,14 @@ export function ProjectIDE() {
         }
       }
 
-      const newFile = await createFileApi(projectId, { name: filename, path: filePath });
+      const boilerplateCode = getBoilerplateForFilename(filename);
+      const newFile = await createFileApi(projectId, { name: filename, path: filePath, sourceCode: boilerplateCode });
       const updatedData = await fetchProjectFiles(projectId);
       setFiles(updatedData.files || []);
       setFolders(updatedData.folders || []);
-      setFileContents(prev => ({ ...prev, [newFile.id || newFile._id]: '' }));
-      handleOpenFile(newFile);
+      const fId = newFile.id || newFile._id;
+      setFileContents(prev => ({ ...prev, [fId]: newFile.sourceCode || boilerplateCode }));
+      handleOpenFile({ ...newFile, sourceCode: newFile.sourceCode || boilerplateCode });
     } catch (err) {
       alert(err.message || 'File creation failed.');
     }
@@ -1211,6 +1215,56 @@ export function ProjectIDE() {
         onClose={() => setIsPaletteOpen(false)}
         onAction={handlePaletteAction}
       />
+
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-80 max-w-[85vw] bg-bg-deep border-r border-border-main flex flex-col h-full z-10 shadow-2xl overflow-hidden"
+            >
+              <div className="p-3 bg-surface border-b border-border-main flex items-center justify-between">
+                <span className="font-mono text-xs font-bold text-brand-primary uppercase tracking-wider">
+                  Project Workspace
+                </span>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-text-primary"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <Explorer
+                  files={files}
+                  folders={folders}
+                  activeFileId={activeFileId}
+                  onOpenFile={(f) => {
+                    handleOpenFile(f);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  onCreateFile={handleCreateFile}
+                  onCreateFolder={handleCreateFolder}
+                  onDeleteFile={handleDeleteFile}
+                  onDeleteFolder={handleDeleteFolder}
+                  onRenameFile={handleRenameFile}
+                  onCloseMobile={() => setIsMobileSidebarOpen(false)}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
