@@ -54,7 +54,7 @@ export function ExtensionsPanel({ enabledExtensions = {}, onToggleExtension }) {
   const enabledCount = Object.keys(enabledExtensions).filter(key => enabledExtensions[key] !== false).length;
 
   return (
-    <div className="w-80 bg-bg-deep border-r border-border-main flex flex-col h-full select-none shrink-0 font-sans">
+    <div className="w-full md:w-80 lg:w-96 bg-bg-deep border-r border-border-main flex flex-col h-full select-none shrink-0 font-sans">
       <div className="p-3.5 border-b border-border-main flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

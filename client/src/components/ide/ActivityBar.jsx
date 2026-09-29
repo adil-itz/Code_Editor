@@ -1,7 +1,7 @@
 import React from 'react';
 import { Files, Search, GitBranch, PlayCircle, Blocks, Settings } from 'lucide-react';
 
-export function ActivityBar({ activeTab, onTabChange }) {
+export function ActivityBar({ activeTab, onTabChange, isSidebarOpen = true, onOpenSettings }) {
   const navItems = [
     { id: 'explorer', label: 'Explorer', icon: Files },
     { id: 'search', label: 'Search', icon: Search },
@@ -15,7 +15,7 @@ export function ActivityBar({ activeTab, onTabChange }) {
       <div className="flex flex-col items-center gap-2 w-full">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = activeTab === item.id && isSidebarOpen;
           return (
             <button
               key={item.id}
@@ -24,7 +24,7 @@ export function ActivityBar({ activeTab, onTabChange }) {
               title={item.disabled ? `${item.label} (Coming Soon)` : item.label}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all relative cursor-pointer ${
                 isActive 
-                  ? 'text-brand-primary bg-surface border border-border-main' 
+                  ? 'text-brand-primary bg-surface border border-border-main shadow-xs' 
                   : item.disabled
                     ? 'text-text-muted/30 cursor-not-allowed'
                     : 'text-text-muted hover:text-text-primary hover:bg-surface-elevated'
@@ -40,7 +40,8 @@ export function ActivityBar({ activeTab, onTabChange }) {
       </div>
 
       <button
-        title="Settings"
+        onClick={onOpenSettings}
+        title="Settings & Commands"
         className="w-10 h-10 rounded-xl flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
       >
         <Settings className="w-5 h-5" />

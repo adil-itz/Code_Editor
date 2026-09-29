@@ -24,7 +24,7 @@ export function SearchPanel({ files, onOpenFile }) {
   }
 
   return (
-    <div className="w-72 bg-surface border-r border-border-main flex flex-col h-full select-none shrink-0 font-mono text-xs">
+    <div className="w-full md:w-72 lg:w-80 bg-surface border-r border-border-main flex flex-col h-full select-none shrink-0 font-mono text-xs">
       <div className="p-3 border-b border-border-main">
         <span className="font-bold text-text-primary uppercase tracking-wider">Search Workspace</span>
       </div>

@@ -8,6 +8,7 @@ export function IDEHeader({
   isDirty, 
   isSaving, 
   isRunning, 
+  isSidebarOpen,
   isBottomOpen, 
   onToggleBottomPanel, 
   onToggleMobileSidebar,
@@ -35,10 +36,15 @@ export function IDEHeader({
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="md:hidden p-1.5 rounded-lg bg-surface-elevated border border-border-main text-text-secondary hover:text-text-primary"
-            title="Toggle File Explorer"
+            className={`p-1.5 rounded-lg border font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              isSidebarOpen 
+                ? 'bg-brand-primary/15 border-brand-primary text-brand-primary' 
+                : 'bg-surface-elevated hover:bg-surface border-border-main text-text-secondary hover:text-text-primary'
+            }`}
+            title="Toggle Sidebar Explorer (Ctrl+B)"
           >
-            <FolderTree className="w-4 h-4 text-brand-primary" />
+            <FolderTree className="w-4 h-4" />
+            <span className="hidden xl:inline text-[11px]">Sidebar</span>
           </button>
         )}
 
