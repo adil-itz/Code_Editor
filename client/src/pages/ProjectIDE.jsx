@@ -42,8 +42,22 @@ export function ProjectIDE() {
   const [loading, setLoading] = useState(true);
 
   const [activeActivityTab, setActiveActivityTab] = useState('explorer');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [openFiles, setOpenFiles] = useState([]);
   const [activeFileId, setActiveFileId] = useState(null);
+
+  const handleActivityTabChange = (tabId) => {
+    if (activeActivityTab === tabId) {
+      setIsSidebarOpen(prev => !prev);
+    } else {
+      setActiveActivityTab(tabId);
+      setIsSidebarOpen(true);
+    }
+  };
+
+  const handleToggleSidebar = () => {
+    setIsSidebarOpen(prev => !prev);
+  };
 
   const [fileContents, setFileContents] = useState({});
   const [dirtyFiles, setDirtyFiles] = useState({});
@@ -107,7 +121,6 @@ export function ProjectIDE() {
   const [prevStdoutLength, setPrevStdoutLength] = useState(0);
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSnippetsOpen, setIsSnippetsOpen] = useState(false);
@@ -299,6 +312,10 @@ export function ProjectIDE() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleSaveActiveFile();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        handleToggleSidebar();
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -960,9 +977,10 @@ export function ProjectIDE() {
         isDirty={isCurrentDirty}
         isSaving={isSaving}
         isRunning={isRunning}
+        isSidebarOpen={isSidebarOpen}
         isBottomOpen={isBottomOpen}
         onToggleBottomPanel={() => setIsBottomOpen(prev => !prev)}
-        onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+        onToggleMobileSidebar={handleToggleSidebar}
         editorTheme={editorTheme}
         onThemeChange={handleThemeChange}
         onSave={handleSaveActiveFile}
@@ -976,41 +994,46 @@ export function ProjectIDE() {
       <div className="flex-1 flex overflow-hidden relative">
         <ActivityBar 
           activeTab={activeActivityTab} 
-          onTabChange={setActiveActivityTab}
+          isSidebarOpen={isSidebarOpen}
+          onTabChange={handleActivityTabChange}
           onOpenSettings={() => setIsPaletteOpen(true)}
         />
 
         <div className={`flex-1 flex overflow-hidden relative transition-all duration-200`}>
-          {activeActivityTab === 'explorer' && (
-            <Explorer 
-              files={files}
-              folders={folders}
-              activeFileId={activeFileId}
-              onOpenFile={handleOpenFile}
-              onCreateFile={handleCreateFile}
-              onCreateFolder={handleCreateFolder}
-              onDeleteFile={handleDeleteFile}
-              onDeleteFolder={handleDeleteFolder}
-              onRenameFile={handleRenameFile}
-            />
-          )}
+          {isSidebarOpen && (
+            <div className="hidden md:flex shrink-0 h-full">
+              {activeActivityTab === 'explorer' && (
+                <Explorer 
+                  files={files}
+                  folders={folders}
+                  activeFileId={activeFileId}
+                  onOpenFile={handleOpenFile}
+                  onCreateFile={handleCreateFile}
+                  onCreateFolder={handleCreateFolder}
+                  onDeleteFile={handleDeleteFile}
+                  onDeleteFolder={handleDeleteFolder}
+                  onRenameFile={handleRenameFile}
+                />
+              )}
 
-          {activeActivityTab === 'search' && (
-            <SearchPanel 
-              files={files}
-              fileContents={fileContents}
-              onSelectFile={(fId) => {
-                const f = files.find(file => (file.id || file._id) === fId);
-                if (f) handleOpenFile(f);
-              }}
-            />
-          )}
+              {activeActivityTab === 'search' && (
+                <SearchPanel 
+                  files={files}
+                  fileContents={fileContents}
+                  onSelectFile={(fId) => {
+                    const f = files.find(file => (file.id || file._id) === fId);
+                    if (f) handleOpenFile(f);
+                  }}
+                />
+              )}
 
-          {activeActivityTab === 'extensions' && (
-            <ExtensionsPanel 
-              enabledExtensions={enabledExtensions}
-              onToggleExtension={handleToggleExtension}
-            />
+              {activeActivityTab === 'extensions' && (
+                <ExtensionsPanel 
+                  enabledExtensions={enabledExtensions}
+                  onToggleExtension={handleToggleExtension}
+                />
+              )}
+            </div>
           )}
 
           <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary">
@@ -1217,13 +1240,13 @@ export function ProjectIDE() {
       />
 
       <AnimatePresence>
-        {isMobileSidebarOpen && (
+        {isSidebarOpen && (
           <div className="fixed inset-0 z-50 flex md:hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsMobileSidebarOpen(false)}
+              onClick={() => setIsSidebarOpen(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             />
             <motion.div
@@ -1235,31 +1258,53 @@ export function ProjectIDE() {
             >
               <div className="p-3 bg-surface border-b border-border-main flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-brand-primary uppercase tracking-wider">
-                  Project Workspace
+                  {activeActivityTab === 'explorer' ? 'Explorer' : activeActivityTab === 'search' ? 'Search' : 'Extensions'}
                 </span>
                 <button
-                  onClick={() => setIsMobileSidebarOpen(false)}
-                  className="p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-text-primary"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors"
+                  title="Close Sidebar"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <Explorer
-                  files={files}
-                  folders={folders}
-                  activeFileId={activeFileId}
-                  onOpenFile={(f) => {
-                    handleOpenFile(f);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  onCreateFile={handleCreateFile}
-                  onCreateFolder={handleCreateFolder}
-                  onDeleteFile={handleDeleteFile}
-                  onDeleteFolder={handleDeleteFolder}
-                  onRenameFile={handleRenameFile}
-                  onCloseMobile={() => setIsMobileSidebarOpen(false)}
-                />
+                {activeActivityTab === 'explorer' && (
+                  <Explorer
+                    files={files}
+                    folders={folders}
+                    activeFileId={activeFileId}
+                    onOpenFile={(f) => {
+                      handleOpenFile(f);
+                      setIsSidebarOpen(false);
+                    }}
+                    onCreateFile={handleCreateFile}
+                    onCreateFolder={handleCreateFolder}
+                    onDeleteFile={handleDeleteFile}
+                    onDeleteFolder={handleDeleteFolder}
+                    onRenameFile={handleRenameFile}
+                    onCloseMobile={() => setIsSidebarOpen(false)}
+                  />
+                )}
+                {activeActivityTab === 'search' && (
+                  <SearchPanel
+                    files={files}
+                    fileContents={fileContents}
+                    onSelectFile={(fId) => {
+                      const f = files.find(file => (file.id || file._id) === fId);
+                      if (f) {
+                        handleOpenFile(f);
+                        setIsSidebarOpen(false);
+                      }
+                    }}
+                  />
+                )}
+                {activeActivityTab === 'extensions' && (
+                  <ExtensionsPanel
+                    enabledExtensions={enabledExtensions}
+                    onToggleExtension={handleToggleExtension}
+                  />
+                )}
               </div>
             </motion.div>
           </div>

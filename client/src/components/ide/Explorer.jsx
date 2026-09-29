@@ -223,7 +223,7 @@ export function Explorer({ files = [], folders = [], activeFileId, onOpenFile, o
   const rootFiles = getFolderFiles('');
 
   return (
-    <div className="w-64 bg-surface border-r border-border-main flex flex-col h-full select-none shrink-0 font-mono">
+    <div className="w-full md:w-64 lg:w-72 bg-surface border-r border-border-main flex flex-col h-full select-none shrink-0 font-mono">
       <div className="p-3 border-b border-border-main flex items-center justify-between">
         <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Explorer</span>
         <div className="flex items-center gap-1">
