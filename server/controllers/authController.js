@@ -5,6 +5,7 @@ import {
   verifyPassword, 
   generateOTP,
   verifyOTP,
+  updateUser2FA,
   resetUserPasswordWithOTP
 } from '../db/userStore.js';
 
@@ -59,6 +60,15 @@ export async function login(req, res) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
+    if (user.is2FAEnabled) {
+      await generateOTP(email);
+      return res.json({
+        require2FA: true,
+        email: user.email,
+        message: 'Two-Factor Authentication is enabled. A 6-digit OTP has been sent to your email.'
+      });
+    }
+
     const token = signToken(user.id || user._id);
     const { password: _, ...userWithoutPassword } = user;
     const role = userWithoutPassword.role || (userWithoutPassword.email?.toLowerCase() === 'admin@gmail.com' ? 'admin' : 'user');
@@ -77,6 +87,73 @@ export async function login(req, res) {
   }
 }
 
+export async function verify2FACode(req, res) {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and 2FA OTP code are required.' });
+    }
+
+    await verifyOTP(email, otp);
+
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const token = signToken(user.id || user._id);
+    const { password: _, ...userWithoutPassword } = user;
+    const role = userWithoutPassword.role || (userWithoutPassword.email?.toLowerCase() === 'admin@gmail.com' ? 'admin' : 'user');
+
+    return res.json({
+      message: '2FA verified. Login successful.',
+      token,
+      user: {
+        ...userWithoutPassword,
+        id: user.id || user._id?.toString(),
+        role
+      }
+    });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || '2FA OTP verification failed.' });
+  }
+}
+
+export async function toggle2FAController(req, res) {
+  try {
+    const { is2FAEnabled, otp } = req.body;
+    const userId = req.user.id || req.user._id;
+
+    if (is2FAEnabled) {
+      if (!otp) {
+        await generateOTP(req.user.email);
+        return res.json({
+          requireOTP: true,
+          message: 'An OTP has been sent to your email to confirm enabling 2FA.'
+        });
+      }
+
+      await verifyOTP(req.user.email, otp);
+      const updatedUser = await updateUser2FA(userId, true);
+      return res.json({
+        message: 'Two-Factor Authentication has been enabled successfully.',
+        is2FAEnabled: true,
+        user: updatedUser
+      });
+    } else {
+      const updatedUser = await updateUser2FA(userId, false);
+      return res.json({
+        message: 'Two-Factor Authentication has been disabled.',
+        is2FAEnabled: false,
+        user: updatedUser
+      });
+    }
+  } catch (err) {
+    return res.status(400).json({ message: err.message || 'Failed to update 2FA settings.' });
+  }
+}
+
 export async function sendOTPController(req, res) {
   try {
     const { email } = req.body;
@@ -85,11 +162,10 @@ export async function sendOTPController(req, res) {
       return res.status(400).json({ message: 'Email address is required.' });
     }
 
-    const result = await generateOTP(email);
+    await generateOTP(email);
 
     return res.json({
-      message: 'OTP has been sent to your email.',
-      devOtp: result.devOtp
+      message: 'OTP has been sent to your email.'
     });
   } catch (err) {
     return res.status(400).json({ message: err.message || 'Failed to send OTP.' });

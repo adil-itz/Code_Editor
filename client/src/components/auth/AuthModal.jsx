@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Key, Eye, EyeOff, Terminal, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, Terminal, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck, Key } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,7 @@ export function AuthModal() {
     closeAuthModal, 
     setAuthModalMode,
     login,
+    verify2FACode,
     signup,
     sendOTP,
     verifyOTP,
@@ -25,7 +26,8 @@ export function AuthModal() {
     email: '',
     password: '',
     confirmPassword: '',
-    otp: ''
+    otp: '',
+    twoFAOtp: ''
   });
 
   const [otpStep, setOtpStep] = useState(1);
@@ -33,14 +35,13 @@ export function AuthModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [devOtpCode, setDevOtpCode] = useState('');
+  const [twoFAEmail, setTwoFAEmail] = useState('');
 
   useEffect(() => {
     if (authModalMode === 'forgot') {
       setOtpStep(1);
       setError('');
       setSuccessMsg('');
-      setDevOtpCode('');
     }
   }, [authModalMode]);
 
@@ -60,9 +61,6 @@ export function AuthModal() {
     try {
       const res = await sendOTP(formData.email);
       setSuccessMsg('A 6-digit OTP has been sent to your email.');
-      if (res.devOtp) {
-        setDevOtpCode(res.devOtp);
-      }
       setOtpStep(2);
     } catch (err) {
       setError(err.message || 'Failed to send OTP.');
@@ -83,6 +81,27 @@ export function AuthModal() {
       setOtpStep(3);
     } catch (err) {
       setError(err.message || 'Invalid OTP code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await verify2FACode(twoFAEmail || formData.email, formData.twoFAOtp);
+      const rawRole = data?.user?.role || 'user';
+      const userRole = String(rawRole).toLowerCase();
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message || '2FA OTP code verification failed.');
     } finally {
       setLoading(false);
     }
@@ -123,6 +142,12 @@ export function AuthModal() {
       let data;
       if (authModalMode === 'login') {
         data = await login(formData.email, formData.password);
+        if (data && data.require2FA) {
+          setTwoFAEmail(data.email || formData.email);
+          setAuthModalMode('2fa');
+          setSuccessMsg(data.message || '2FA code sent to your email.');
+          return;
+        }
       } else if (authModalMode === 'signup') {
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match.');
@@ -162,6 +187,7 @@ export function AuthModal() {
               <span className="font-mono font-bold text-sm tracking-tight text-text-primary">
                 {authModalMode === 'login' && 'Sign In to DEVSPACE'}
                 {authModalMode === 'signup' && 'Create Developer Account'}
+                {authModalMode === '2fa' && 'Two-Factor Authentication (2FA)'}
                 {authModalMode === 'forgot' && otpStep === 1 && 'Forgot Password (Step 1 of 3)'}
                 {authModalMode === 'forgot' && otpStep === 2 && 'Verify OTP Code (Step 2 of 3)'}
                 {authModalMode === 'forgot' && otpStep === 3 && 'Set New Password (Step 3 of 3)'}
@@ -208,15 +234,43 @@ export function AuthModal() {
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{successMsg}</span>
                 </div>
-                {devOtpCode && (
-                  <div className="pt-1 text-[11px] text-brand-primary font-bold">
-                    Dev Test OTP Code: <span className="underline tracking-widest text-sm bg-surface p-1 rounded border border-brand-primary/30">{devOtpCode}</span>
-                  </div>
-                )}
               </motion.div>
             )}
 
-            {authModalMode === 'forgot' ? (
+            {authModalMode === '2fa' ? (
+              <form onSubmit={handleVerify2FA} className="space-y-4">
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs font-mono space-y-1 text-purple-300">
+                  <div className="flex items-center gap-2 font-bold text-purple-400">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>2FA Security Verification Required</span>
+                  </div>
+                  <p className="text-[11px] text-text-muted leading-relaxed">
+                    A 6-digit Two-Factor Authentication OTP code has been sent to <span className="font-bold text-text-primary">{twoFAEmail || formData.email}</span>.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-mono text-text-secondary">Enter 6-Digit 2FA Code</label>
+                  <div className="relative">
+                    <Key className="w-4 h-4 absolute left-3 top-3.5 text-purple-400" />
+                    <input
+                      type="text"
+                      name="twoFAOtp"
+                      required
+                      maxLength={6}
+                      value={formData.twoFAOtp}
+                      onChange={handleChange}
+                      placeholder="123456"
+                      className="w-full pl-9 pr-4 py-2.5 bg-surface-elevated border border-purple-500/50 rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple-400 font-mono tracking-widest text-center transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={loading} className="w-full text-xs font-semibold py-2.5 bg-purple-600 hover:bg-purple-500 text-white">
+                  {loading ? 'Verifying 2FA Code...' : 'Verify 2FA & Complete Sign In'}
+                </Button>
+              </form>
+            ) : authModalMode === 'forgot' ? (
               <div>
                 {otpStep === 1 && (
                   <form onSubmit={handleSendOTP} className="space-y-4">
@@ -454,7 +508,7 @@ export function AuthModal() {
                 </span>
               )}
 
-              {authModalMode === 'forgot' && (
+              {(authModalMode === 'forgot' || authModalMode === '2fa') && (
                 <button
                   type="button"
                   onClick={() => {

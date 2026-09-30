@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
 
@@ -152,11 +152,61 @@ export function AuthProvider({ children }) {
       throw new Error(data.message || 'Login failed.');
     }
 
+    if (data.require2FA) {
+      return data;
+    }
+
     localStorage.setItem('devspace-token', data.token);
     setToken(data.token);
     setUser(data.user);
     startNewSession();
     closeAuthModal();
+    return data;
+  };
+
+  const verify2FACode = async (email, otp) => {
+    const res = await fetch(`${API_BASE_URL}/verify-2fa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || '2FA verification failed.');
+    }
+
+    localStorage.setItem('devspace-token', data.token);
+    setToken(data.token);
+    setUser(data.user);
+    startNewSession();
+    closeAuthModal();
+    return data;
+  };
+
+  const toggle2FA = async (is2FAEnabled, otp) => {
+    if (!token) throw new Error('Authentication required.');
+
+    const res = await fetch(`${API_BASE_URL}/toggle-2fa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ is2FAEnabled, otp })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Updating 2FA settings failed.');
+    }
+
+    if (data.user) {
+      setUser(data.user);
+    } else {
+      setUser(prev => prev ? { ...prev, is2FAEnabled: data.is2FAEnabled } : prev);
+    }
+
     return data;
   };
 
@@ -249,6 +299,8 @@ export function AuthProvider({ children }) {
       closeAuthModal,
       setAuthModalMode,
       login,
+      verify2FACode,
+      toggle2FA,
       signup,
       sendOTP,
       verifyOTP,
@@ -267,4 +319,3 @@ export function useAuth() {
   }
   return context;
 }
-

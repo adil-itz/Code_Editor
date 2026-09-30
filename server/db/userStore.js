@@ -59,6 +59,7 @@ export async function createUser({ name, email, password, role = 'user' }) {
       name,
       email: email.toLowerCase(),
       password: passwordHash,
+      is2FAEnabled: false,
       role
     });
     return doc.toJSON();
@@ -75,6 +76,7 @@ export async function createUser({ name, email, password, role = 'user' }) {
     name,
     email: email.toLowerCase(),
     password: passwordHash,
+    is2FAEnabled: false,
     role: role || 'user',
     createdAt: new Date().toISOString(),
     resetToken: null,
@@ -117,8 +119,8 @@ export async function generateOTP(email) {
     writeUsers(users);
   }
 
-  const emailRes = await sendOTPEmail(email.toLowerCase(), otp);
-  return { otp, devOtp: emailRes.devOtp };
+  await sendOTPEmail(email.toLowerCase(), otp);
+  return { success: true };
 }
 
 export async function verifyOTP(email, otp) {
@@ -131,6 +133,9 @@ export async function verifyOTP(email, otp) {
     if (!user) {
       throw new Error('Invalid or expired OTP code.');
     }
+    user.otp = null;
+    user.otpExpiry = null;
+    await user.save();
     return true;
   }
 
@@ -143,7 +148,29 @@ export async function verifyOTP(email, otp) {
   if (!user) {
     throw new Error('Invalid or expired OTP code.');
   }
+  user.otp = null;
+  user.otpExpiry = null;
+  writeUsers(users);
   return true;
+}
+
+export async function updateUser2FA(id, is2FAEnabled) {
+  if (isMongoConnected()) {
+    const user = await User.findByIdAndUpdate(id, { is2FAEnabled }, { new: true }).lean();
+    if (!user) throw new Error('User not found');
+    const { password, otp, otpExpiry, ...rest } = user;
+    return { ...rest, id: user._id.toString() };
+  }
+
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === id);
+  if (index === -1) throw new Error('User not found');
+
+  users[index].is2FAEnabled = is2FAEnabled;
+  writeUsers(users);
+
+  const { password, otp, otpExpiry, ...updatedUser } = users[index];
+  return updatedUser;
 }
 
 export async function resetUserPasswordWithOTP(email, otp, newPassword) {
@@ -195,16 +222,13 @@ export async function seedAdminUser() {
 
   const existing = await findUserByEmail(adminEmail);
   if (!existing) {
-    console.log('[SEED] Creating default Admin user (admin@gmail.com)...');
     await createUser({
       name: adminName,
       email: adminEmail,
       password: adminPassword,
       role: 'admin'
     });
-    console.log('[SEED] Default Admin user created successfully.');
   } else if (existing.role !== 'admin') {
-    console.log('[SEED] Updating existing user admin@gmail.com to role: admin...');
     await updateUserRole(existing.id || existing._id, 'admin');
   }
 }
@@ -255,4 +279,3 @@ export async function deleteUser(id) {
   writeUsers(filtered);
   return true;
 }
-
