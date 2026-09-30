@@ -25,7 +25,7 @@ export function GlobalAIFloatingButton() {
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2.5 shadow-xl shadow-purple-600/30 border border-purple-400/30 cursor-pointer select-none group"
+        className="fixed bottom-8 right-3 sm:bottom-6 sm:right-6 z-40 p-2.5 sm:px-3.5 sm:py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 sm:gap-2.5 shadow-xl shadow-purple-600/30 border border-purple-400/30 cursor-pointer select-none group"
         title="Open Groq AI Assistant (Ctrl+I)"
       >
         <div className="relative">
