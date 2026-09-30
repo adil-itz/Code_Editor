@@ -13,6 +13,7 @@ import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { WorkspaceHome } from './pages/WorkspaceHome';
 import { ProjectIDE } from './pages/ProjectIDE';
 import { SharedCodePage } from './pages/SharedCodePage';
+import { GlobalAIFloatingButton } from './components/ui/GlobalAIFloatingButton';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, openAuthModal } = useAuth();
@@ -149,6 +150,7 @@ export default function App() {
             </Routes>
             <AuthModal />
             <SessionExpiryModal />
+            <GlobalAIFloatingButton />
           </div>
         </BrowserRouter>
       </AuthProvider>

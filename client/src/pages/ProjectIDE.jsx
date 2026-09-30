@@ -30,6 +30,7 @@ import { StatusBar } from '../components/ide/StatusBar';
 import { ShareModal } from '../components/ide/ShareModal';
 import { ExecutionHistoryModal } from '../components/ide/ExecutionHistoryModal';
 import { SavedSnippetsModal } from '../components/ide/SavedSnippetsModal';
+import { AIAssistantDrawer } from '../components/ide/AIAssistantDrawer';
 import { Terminal, Terminal as TerminalIcon, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
@@ -124,6 +125,7 @@ export function ProjectIDE() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSnippetsOpen, setIsSnippetsOpen] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
 
   const handleMouseDownResize = (e) => {
     e.preventDefault();
@@ -953,6 +955,7 @@ export function ProjectIDE() {
   };
 
   const handlePaletteAction = (actionId) => {
+    if (actionId === 'open-ai-assistant') setIsAIAssistantOpen(true);
     if (actionId === 'save') handleSaveActiveFile();
     if (actionId === 'run') handleRunCode();
     if (actionId === 'toggle-terminal') { setIsBottomOpen(prev => !prev); setBottomTab('terminal'); }
@@ -989,6 +992,7 @@ export function ProjectIDE() {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenSnippets={() => setIsSnippetsOpen(true)}
         onOpenCommandPalette={() => setIsPaletteOpen(true)}
+        onOpenAIAssistant={() => setIsAIAssistantOpen(true)}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -997,6 +1001,7 @@ export function ProjectIDE() {
           isSidebarOpen={isSidebarOpen}
           onTabChange={handleActivityTabChange}
           onOpenSettings={() => setIsPaletteOpen(true)}
+          onOpenAIAssistant={() => setIsAIAssistantOpen(true)}
         />
 
         <div className={`flex-1 flex overflow-hidden relative transition-all duration-200`}>
@@ -1237,6 +1242,21 @@ export function ProjectIDE() {
         isOpen={isPaletteOpen}
         onClose={() => setIsPaletteOpen(false)}
         onAction={handlePaletteAction}
+      />
+
+      <AIAssistantDrawer
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        activeFile={activeFile}
+        activeCode={currentCode}
+        diagnostics={diagnostics}
+        terminalOutput={Array.isArray(output) ? output.map(o => o.text || o).join('\n') : String(output || '')}
+        projectName={project?.name || ''}
+        onInsertCode={(codeToInsert) => {
+          if (activeFileId && codeToInsert !== undefined) {
+            handleCodeChange(codeToInsert);
+          }
+        }}
       />
 
       <AnimatePresence>

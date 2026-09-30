@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Save, Terminal, CheckCircle2, ArrowLeft, PanelBottom, Palette, FolderTree, Share2, Clock, Bookmark } from 'lucide-react';
+import { Play, Save, Terminal, CheckCircle2, ArrowLeft, PanelBottom, Palette, FolderTree, Share2, Clock, Bookmark, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function IDEHeader({ 
@@ -19,7 +19,8 @@ export function IDEHeader({
   onShare,
   onOpenHistory,
   onOpenSnippets,
-  onOpenCommandPalette 
+  onOpenCommandPalette,
+  onOpenAIAssistant
 }) {
   return (
     <div className="h-12 bg-bg-deep border-b border-border-main px-2.5 sm:px-4 flex items-center justify-between select-none font-mono text-xs overflow-x-auto no-scrollbar">
@@ -132,6 +133,17 @@ export function IDEHeader({
           >
             <Bookmark className="w-3.5 h-3.5 text-brand-primary" />
             <span className="hidden sm:inline text-[11px]">Snippets</span>
+          </button>
+        )}
+
+        {onOpenAIAssistant && (
+          <button
+            onClick={onOpenAIAssistant}
+            className="px-2.5 py-1.5 sm:px-3 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            title="Open Groq AI Assistant"
+          >
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            <span className="hidden sm:inline text-[11px]">AI Assist</span>
           </button>
         )}
 
