@@ -12,8 +12,8 @@ export function ActivityBar({ activeTab, onTabChange, isSidebarOpen = true, onOp
   ];
 
   return (
-    <div className="w-12 bg-bg-deep border-r border-border-main flex flex-col justify-between items-center py-3 select-none z-10 shrink-0">
-      <div className="flex flex-col items-center gap-2 w-full">
+    <div className="w-10 sm:w-12 bg-bg-deep border-r border-border-main flex flex-col justify-between items-center py-2 sm:py-3 select-none z-10 shrink-0">
+      <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id && isSidebarOpen;
@@ -30,7 +30,7 @@ export function ActivityBar({ activeTab, onTabChange, isSidebarOpen = true, onOp
               }}
               disabled={item.disabled}
               title={item.disabled ? `${item.label} (Coming Soon)` : item.label}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all relative cursor-pointer ${
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all relative cursor-pointer ${
                 isActive 
                   ? item.isAI
                     ? 'text-purple-400 bg-purple-500/15 border border-purple-500/40 shadow-xs shadow-purple-500/20'
@@ -42,9 +42,9 @@ export function ActivityBar({ activeTab, onTabChange, isSidebarOpen = true, onOp
                       : 'text-text-muted hover:text-text-primary hover:bg-surface-elevated'
               }`}
             >
-              <Icon className={`w-5 h-5 ${item.isAI ? 'animate-pulse' : ''}`} />
+              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${item.isAI ? 'animate-pulse' : ''}`} />
               {isActive && (
-                <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${item.isAI ? 'bg-purple-500' : 'bg-brand-primary'}`} />
+                <div className={`absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full ${item.isAI ? 'bg-purple-500' : 'bg-brand-primary'}`} />
               )}
             </button>
           );
@@ -54,9 +54,9 @@ export function ActivityBar({ activeTab, onTabChange, isSidebarOpen = true, onOp
       <button
         onClick={onOpenSettings}
         title="Settings & Commands"
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
       >
-        <Settings className="w-5 h-5" />
+        <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     </div>
   );

@@ -35,12 +35,12 @@ export function CommandPalette({ isOpen, onClose, onAction }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-sm select-none font-mono">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-3 sm:px-4 bg-black/70 backdrop-blur-sm select-none font-mono">
       <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -15 }}
-        className="bg-surface border border-border-main rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
+        className="bg-surface border border-border-main rounded-2xl w-full max-w-[92vw] sm:max-w-lg overflow-hidden shadow-2xl"
       >
         <div className="p-3 border-b border-border-main flex items-center gap-3">
           <Command className="w-4 h-4 text-brand-primary shrink-0" />
