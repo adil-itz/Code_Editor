@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
   Code2, 
@@ -16,7 +16,11 @@ import {
   FileCode,
   Zap,
   ArrowRight,
-  Bookmark
+  Bookmark,
+  ShieldCheck,
+  Key,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -24,11 +28,17 @@ import { ExecutionHistoryModal } from '../components/ide/ExecutionHistoryModal';
 import { SavedSnippetsModal } from '../components/ide/SavedSnippetsModal';
 
 export function UserDashboard() {
-  const { user } = useAuth();
+  const { user, toggle2FA } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSnippetsOpen, setIsSnippetsOpen] = useState(false);
+
+  const [is2FALoading, setIs2FALoading] = useState(false);
+  const [show2FAOTPInput, setShow2FAOTPInput] = useState(false);
+  const [twoFAOtpCode, setTwoFAOtpCode] = useState('');
+  const [twoFAFeedback, setTwoFAFeedback] = useState('');
+  const [twoFAError, setTwoFAError] = useState('');
 
   const projects = [
     { id: '1', title: 'React Canvas IDE Component', language: 'JavaScript', updated: '2 hours ago', status: 'Active', stars: 14 },
@@ -42,11 +52,58 @@ export function UserDashboard() {
     p.language.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const is2FAEnabled = !!user?.is2FAEnabled;
+
+  const handleToggle2FATrigger = async () => {
+    setIs2FALoading(true);
+    setTwoFAFeedback('');
+    setTwoFAError('');
+
+    try {
+      if (is2FAEnabled) {
+        const res = await toggle2FA(false);
+        setTwoFAFeedback(res.message || '2FA disabled successfully.');
+        setShow2FAOTPInput(false);
+      } else {
+        const res = await toggle2FA(true);
+        if (res.requireOTP) {
+          setShow2FAOTPInput(true);
+          setTwoFAFeedback('A 6-digit OTP code was sent to your email to confirm enabling 2FA.');
+        } else {
+          setTwoFAFeedback(res.message || '2FA enabled successfully.');
+        }
+      }
+    } catch (err) {
+      setTwoFAError(err.message || 'Failed to update 2FA status.');
+    } finally {
+      setIs2FALoading(false);
+    }
+  };
+
+  const handleConfirmEnable2FA = async (e) => {
+    e.preventDefault();
+    if (!twoFAOtpCode.trim()) return;
+
+    setIs2FALoading(true);
+    setTwoFAFeedback('');
+    setTwoFAError('');
+
+    try {
+      const res = await toggle2FA(true, twoFAOtpCode.trim());
+      setTwoFAFeedback(res.message || '2FA enabled successfully.');
+      setShow2FAOTPInput(false);
+      setTwoFAOtpCode('');
+    } catch (err) {
+      setTwoFAError(err.message || 'Invalid OTP code.');
+    } finally {
+      setIs2FALoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary pt-24 pb-16 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Welcome Banner */}
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -96,6 +153,94 @@ export function UserDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          className="p-6 rounded-2xl bg-surface border border-purple-500/30 shadow-xl space-y-4 font-mono"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-purple-400" />
+                <h2 className="text-lg font-bold text-text-primary">Two-Factor Authentication (2FA)</h2>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  is2FAEnabled 
+                    ? 'bg-status-success/20 text-status-success border border-status-success/30' 
+                    : 'bg-surface-elevated text-text-muted border border-border-main'
+                }`}>
+                  {is2FAEnabled ? '2FA ON' : '2FA OFF'}
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary">
+                Add an extra layer of security to your DEVSPACE account by requiring a 6-digit OTP code sent to your email during sign-in.
+              </p>
+            </div>
+
+            <button
+              onClick={handleToggle2FATrigger}
+              disabled={is2FALoading}
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shrink-0 disabled:opacity-50 ${
+                is2FAEnabled
+                  ? 'bg-status-error/15 hover:bg-status-error/25 text-status-error border border-status-error/30'
+                  : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20'
+              }`}
+            >
+              {is2FALoading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-4 h-4" />
+              )}
+              <span>{is2FAEnabled ? 'Turn OFF 2FA' : 'Turn ON 2FA'}</span>
+            </button>
+          </div>
+
+          {twoFAFeedback && (
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+              <span>{twoFAFeedback}</span>
+            </div>
+          )}
+
+          {twoFAError && (
+            <div className="p-3 rounded-xl bg-status-error/10 border border-status-error/30 text-xs text-status-error flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{twoFAError}</span>
+            </div>
+          )}
+
+          <AnimatePresence>
+            {show2FAOTPInput && !is2FAEnabled && (
+              <motion.form
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                onSubmit={handleConfirmEnable2FA}
+                className="pt-3 border-t border-border-main flex flex-col sm:flex-row items-center gap-3"
+              >
+                <div className="relative flex-1 w-full">
+                  <Key className="w-4 h-4 absolute left-3 top-3 text-purple-400" />
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    placeholder="Enter 6-digit confirmation OTP"
+                    value={twoFAOtpCode}
+                    onChange={(e) => setTwoFAOtpCode(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-bg-deep border border-purple-500/40 rounded-xl text-xs text-text-primary focus:outline-none focus:border-purple-400 tracking-widest"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={is2FALoading || !twoFAOtpCode.trim()}
+                  className="w-full sm:w-auto px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 shrink-0"
+                >
+                  {is2FALoading ? 'Confirming...' : 'Confirm & Enable 2FA'}
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           className="p-6 rounded-2xl bg-surface border border-brand-primary/40 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden"
         >
           <div className="space-y-1.5 font-mono">
@@ -116,7 +261,6 @@ export function UserDashboard() {
           </Link>
         </motion.div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
@@ -186,10 +330,8 @@ export function UserDashboard() {
           </motion.div>
         </div>
 
-        {/* Content Section: Recent Projects & Scratchpad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Projects List (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h2 className="text-lg font-bold font-mono text-text-primary flex items-center gap-2">
@@ -232,7 +374,7 @@ export function UserDashboard() {
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1 text-status-success">
-                        <CheckCircle2 className="w-3 h-3" />
+                        <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{project.status}</span>
                       </span>
                     </div>
@@ -250,7 +392,6 @@ export function UserDashboard() {
             </div>
           </div>
 
-          {/* Side Widget: Quick Launch IDE Card */}
           <div className="space-y-4">
             <h2 className="text-lg font-bold font-mono text-text-primary flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-status-warning" />

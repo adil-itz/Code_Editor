@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  is2FAEnabled: {
+    type: Boolean,
+    default: false
+  },
   role: {
     type: String,
     enum: ['user', 'admin'],
