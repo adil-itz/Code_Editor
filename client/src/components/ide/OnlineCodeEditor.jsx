@@ -28,6 +28,7 @@ import { isEofError, isInputNeeded, extractPromptsFromStdout, formatInterleavedT
 import { ShareModal } from './ShareModal';
 import { ExecutionHistoryModal } from './ExecutionHistoryModal';
 import { SavedSnippetsModal } from './SavedSnippetsModal';
+import { AIAssistantDrawer } from './AIAssistantDrawer';
 import { saveLocalExecutionHistory } from '../../services/historyService';
 import { createSavedSnippetApi } from '../../services/snippetService';
 import { BOILERPLATE_TEMPLATES, getBoilerplateForFilename, getBoilerplateForLanguage } from '../../utils/boilerplateTemplates';
@@ -265,6 +266,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSnippetsModalOpen, setIsSnippetsModalOpen] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [stdin, setStdin] = useState('');
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPromptText, setInputPromptText] = useState('');
@@ -639,6 +641,15 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
           </button>
 
           <button
+            onClick={() => setIsAIAssistantOpen(true)}
+            className="px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            title="Open Groq AI Assistant"
+          >
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            <span className="hidden sm:inline text-[11px]">AI Assist</span>
+          </button>
+
+          <button
             onClick={handleSaveSnippet}
             title="Save Snippet to Profile"
             className="p-1.5 rounded-lg bg-surface-elevated hover:bg-surface border border-border-main text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
@@ -959,6 +970,18 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
           setLanguage(sharedLang);
           setFileName(sharedTitle || fileName);
           setIsShareModalOpen(true);
+        }}
+      />
+      <AIAssistantDrawer
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        activeFile={{ name: fileName, language: language }}
+        activeCode={code}
+        terminalOutput={Array.isArray(output) ? output.map(o => o.text || o).join('\n') : String(output || '')}
+        onInsertCode={(codeToInsert) => {
+          if (codeToInsert !== undefined) {
+            setCode(codeToInsert);
+          }
         }}
       />
     </div>

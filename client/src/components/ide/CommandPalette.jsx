@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Command, FilePlus, Play, Save, Eye, Terminal, X } from 'lucide-react';
+import { Search, Command, FilePlus, Play, Save, Eye, Terminal, X, Sparkles } from 'lucide-react';
 
 export function CommandPalette({ isOpen, onClose, onAction }) {
   const [query, setQuery] = useState('');
 
   const commands = [
+    { id: 'open-ai-assistant', label: 'Open Groq AI Assistant', icon: Sparkles, shortcut: 'Ctrl+I' },
     { id: 'save', label: 'Save File', icon: Save, shortcut: 'Ctrl+S' },
     { id: 'run', label: 'Run Code', icon: Play, shortcut: 'F5' },
     { id: 'new-file', label: 'New File', icon: FilePlus, shortcut: 'Ctrl+N' },
