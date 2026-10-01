@@ -29,6 +29,7 @@ import { ShareModal } from './ShareModal';
 import { ExecutionHistoryModal } from './ExecutionHistoryModal';
 import { SavedSnippetsModal } from './SavedSnippetsModal';
 import { AIAssistantDrawer } from './AIAssistantDrawer';
+import { InlineCopilotModal } from './InlineCopilotModal';
 import { saveLocalExecutionHistory } from '../../services/historyService';
 import { createSavedSnippetApi } from '../../services/snippetService';
 import { BOILERPLATE_TEMPLATES, getBoilerplateForFilename, getBoilerplateForLanguage } from '../../utils/boilerplateTemplates';
@@ -267,6 +268,7 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSnippetsModalOpen, setIsSnippetsModalOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const [isInlineCopilotOpen, setIsInlineCopilotOpen] = useState(false);
   const [stdin, setStdin] = useState('');
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPromptText, setInputPromptText] = useState('');
@@ -978,9 +980,24 @@ export function OnlineCodeEditor({ initialCode = null, initialLanguage = 'javasc
         activeFile={{ name: fileName, language: language }}
         activeCode={code}
         terminalOutput={Array.isArray(output) ? output.map(o => o.text || o).join('\n') : String(output || '')}
+        onOpenInlineCopilot={() => {
+          setIsAIAssistantOpen(false);
+          setIsInlineCopilotOpen(true);
+        }}
         onInsertCode={(codeToInsert) => {
           if (codeToInsert !== undefined) {
             setCode(codeToInsert);
+          }
+        }}
+      />
+      <InlineCopilotModal
+        isOpen={isInlineCopilotOpen}
+        onClose={() => setIsInlineCopilotOpen(false)}
+        activeFile={{ name: fileName, language: language }}
+        activeCode={code}
+        onApplyCode={(updatedCode) => {
+          if (updatedCode !== undefined) {
+            setCode(updatedCode);
           }
         }}
       />

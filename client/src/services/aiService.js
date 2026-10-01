@@ -8,7 +8,7 @@ function getAuthHeaders() {
   };
 }
 
-export async function sendAIChatApi({ messages, activeCode, language, activeFileName, projectContext, model }) {
+export async function sendAIChatApi({ messages, activeCode, language, activeFileName, projectContext, model, promptType }) {
   const savedModel = localStorage.getItem('devspace_groq_model');
   const finalModel = model || savedModel || 'qwen/qwen3.8-27b';
 
@@ -21,13 +21,39 @@ export async function sendAIChatApi({ messages, activeCode, language, activeFile
       language,
       activeFileName,
       projectContext,
+      model: finalModel,
+      promptType
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to communicate with Groq AI Assistant.');
+  }
+
+  return data;
+}
+
+export async function sendInlineAICompletionApi({ prompt, selectedCode, activeCode, language, fileName, model }) {
+  const savedModel = localStorage.getItem('devspace_groq_model');
+  const finalModel = model || savedModel || 'qwen/qwen3.8-27b';
+
+  const res = await fetch(`${API_BASE}/inline`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      prompt,
+      selectedCode,
+      activeCode,
+      language,
+      fileName,
       model: finalModel
     })
   });
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Failed to communicate with AI Assistant.');
+    throw new Error(data.message || 'Inline AI processing failed.');
   }
 
   return data;
@@ -41,7 +67,6 @@ export async function checkAIStatusApi() {
     if (!res.ok) return { hasServerKey: false };
     return await res.json();
   } catch (err) {
-    console.warn('AI Status check failed:', err);
     return { hasServerKey: false };
   }
 }

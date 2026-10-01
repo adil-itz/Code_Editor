@@ -10,11 +10,14 @@ import {
   Check,
   Code,
   FileCode,
-  Cpu
+  Cpu,
+  Zap,
+  Terminal,
+  RefreshCw,
+  MessageSquare
 } from 'lucide-react';
 import {
   sendAIChatApi,
-  checkAIStatusApi,
   getStoredGroqModel,
   setStoredGroqModel
 } from '../../services/aiService';
@@ -27,21 +30,22 @@ export function AIAssistantDrawer({
   diagnostics = [],
   terminalOutput = '',
   projectName = '',
-  onInsertCode
+  onInsertCode,
+  onOpenInlineCopilot
 }) {
   const [messages, setMessages] = useState(() => [
     {
       id: 'welcome',
       role: 'assistant',
-      content: `### 👋 Welcome to DEVSPACE AI Assistant!
+      content: `### 🤖 VS Code Copilot Chat (Groq AI)
 
-I'm powered by **Groq AI** to give you instant code help and guidance on using this Cloud IDE.
+I am your AI pair programmer powered by **Groq API**. Ask me anything about your code, debug runtime errors, optimize algorithms, or ask for website guidance!
 
-**Here's what I can do for you:**
-- 💡 **Website Guide**: Ask how to log in, run code, manage projects, share links, or use keyboard shortcuts.
-- 🔍 **Code Explanation**: Ask me to explain active editor code line-by-line.
-- 🐞 **Debugging**: Ask me to fix syntax or runtime errors in your output.
-- ⚡ **Code Generation**: Ask me to write algorithms, boilerplate, or component logic.`
+**Quick Actions:**
+- 🐞 **Fix Error**: Auto-diagnose terminal or syntax errors.
+- 💡 **Explain Code**: Breakdown active editor logic step-by-step.
+- 🚀 **Optimize Code**: Improve performance & clean up code.
+- 🧪 **Unit Tests**: Generate unit tests for active file.`
     }
   ]);
 
@@ -70,7 +74,7 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
     setStoredGroqModel(modelId);
   };
 
-  const handleSendMessage = async (textToSend) => {
+  const handleSendMessage = async (textToSend, promptType = 'chat') => {
     const queryText = (textToSend || inputQuery).trim();
     if (!queryText || isLoading) return;
 
@@ -85,8 +89,8 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
     setInputQuery('');
     setIsLoading(true);
 
-    const recentError = terminalOutput && (terminalOutput.includes('Error') || terminalOutput.includes('Exception') || terminalOutput.includes('Traceback'))
-      ? terminalOutput.slice(-1000)
+    const recentError = terminalOutput && (terminalOutput.includes('Error') || terminalOutput.includes('Exception') || terminalOutput.includes('Traceback') || terminalOutput.includes('error'))
+      ? terminalOutput.slice(-1200)
       : (diagnostics.length > 0 ? diagnostics.map(d => `${d.message} (Line ${d.line})`).join('\n') : '');
 
     try {
@@ -99,7 +103,8 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
           projectName,
           lastError: recentError
         },
-        model: selectedModel
+        model: selectedModel,
+        promptType
       });
 
       const assistantMsg = {
@@ -110,13 +115,12 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
 
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
-      console.error('AI Assistant Error:', err);
       setMessages(prev => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `⚠️ **Error**: ${err.message}`
+          content: `⚠️ **Copilot Error**: ${err.message}`
         }
       ]);
     } finally {
@@ -124,8 +128,8 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
     }
   };
 
-  const handleQuickSuggestion = (suggestion) => {
-    handleSendMessage(suggestion);
+  const handleQuickAction = (promptText, promptType) => {
+    handleSendMessage(promptText, promptType);
   };
 
   const handleClearHistory = () => {
@@ -133,7 +137,7 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
       {
         id: 'welcome',
         role: 'assistant',
-        content: `Chat history cleared. How else can I help you with DEVSPACE?`
+        content: `Chat history cleared. How can VS Code Copilot help you now?`
       }
     ]);
   };
@@ -164,15 +168,15 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
           transition={{ type: 'spring', damping: 25, stiffness: 220 }}
           className="relative w-full max-w-lg md:max-w-xl h-full bg-surface-elevated border-l border-border-main shadow-2xl flex flex-col pointer-events-auto z-10 overflow-hidden"
         >
-          <div className="p-3.5 px-4 bg-bg-deep/90 border-b border-border-main flex items-center justify-between shrink-0 select-none">
+          <div className="p-3 px-4 bg-bg-deep border-b border-border-main flex items-center justify-between shrink-0 select-none">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-xs shadow-purple-500/20">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-xs shadow-purple-500/20">
                 <Sparkles className="w-4 h-4 animate-pulse" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs text-text-primary tracking-tight">DEVSPACE AI Assistant</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <span className="font-bold text-xs text-text-primary tracking-tight">Copilot Chat</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
                     GROQ API
                   </span>
                 </div>
@@ -181,17 +185,28 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
                   <select
                     value={selectedModel}
                     onChange={(e) => handleModelSelect(e.target.value)}
-                    className="bg-transparent text-[10px] text-text-secondary focus:outline-none cursor-pointer font-sans"
+                    className="bg-transparent text-[10px] text-text-secondary focus:outline-none cursor-pointer font-sans font-bold"
                   >
-                    <option value="qwen/qwen3.8-27b" className="bg-surface text-text-primary">Qwen 27B (Fast & Smart)</option>
-                    <option value="openai/gpt-oss-120b" className="bg-surface text-text-primary">GPT OSS 120B (High Reasoning)</option>
-                    <option value="openai/gpt-oss-20b" className="bg-surface text-text-primary">GPT OSS 20B (Instant)</option>
+                    <option value="qwen/qwen3.8-27b" className="bg-surface text-text-primary">Groq Qwen 27B (Fast & Smart)</option>
+                    <option value="openai/gpt-oss-120b" className="bg-surface text-text-primary">Groq GPT OSS 120B (High Reasoning)</option>
+                    <option value="openai/gpt-oss-20b" className="bg-surface text-text-primary">Groq GPT OSS 20B (Instant)</option>
                   </select>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
+              {onOpenInlineCopilot && (
+                <button
+                  onClick={onOpenInlineCopilot}
+                  title="Open Inline Copilot (Ctrl+I)"
+                  className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Zap className="w-3 h-3 text-purple-400" />
+                  <span className="hidden sm:inline">Inline Prompt</span>
+                </button>
+              )}
+
               <button
                 onClick={handleClearHistory}
                 title="Clear Chat History"
@@ -210,12 +225,18 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
           </div>
 
           {(activeFile || projectName || terminalOutput) && (
-            <div className="px-3.5 py-1.5 bg-bg-deep/60 border-b border-border-main flex items-center gap-2 overflow-x-auto no-scrollbar text-[11px] text-text-muted shrink-0">
-              <span className="font-semibold text-purple-400 text-[10px] uppercase tracking-wider shrink-0">Active Context:</span>
+            <div className="px-3.5 py-1.5 bg-bg-deep/70 border-b border-border-main flex items-center gap-2 overflow-x-auto no-scrollbar text-[11px] text-text-muted shrink-0">
+              <span className="font-semibold text-purple-400 text-[10px] uppercase tracking-wider shrink-0">Context:</span>
               {activeFile && (
                 <span className="px-2 py-0.5 rounded bg-surface border border-border-main flex items-center gap-1 text-text-primary shrink-0">
-                  <FileCode className="w-3 h-3 text-brand-primary" />
+                  <FileCode className="w-3 h-3 text-purple-400" />
                   <span>{activeFile.name}</span>
+                </span>
+              )}
+              {terminalOutput && (terminalOutput.includes('Error') || terminalOutput.includes('Exception') || terminalOutput.includes('error')) && (
+                <span className="px-2 py-0.5 rounded bg-status-error/15 border border-status-error/30 text-status-error flex items-center gap-1 shrink-0 font-bold">
+                  <Terminal className="w-3 h-3" />
+                  <span>Terminal Error Detected</span>
                 </span>
               )}
               {projectName && (
@@ -233,19 +254,19 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
                 className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.role === 'assistant' && (
-                  <div className="w-7 h-7 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 mt-0.5 shadow-xs">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
 
-                <div className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+                <div className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-brand-primary text-bg-deep font-medium rounded-tr-xs shadow-md'
-                    : 'bg-surface-elevated/80 border border-border-main text-text-primary rounded-tl-xs shadow-sm space-y-2'
+                    ? 'bg-purple-600 text-white font-medium rounded-tr-xs shadow-md'
+                    : 'bg-surface-elevated border border-border-main text-text-primary rounded-tl-xs shadow-sm space-y-2'
                 }`}>
-                  <FormattedMessageContent 
-                    content={msg.content} 
-                    onInsertCode={onInsertCode} 
+                  <FormattedMessageContent
+                    content={msg.content}
+                    onInsertCode={onInsertCode}
                     onCopy={copyToClipboard}
                     copiedId={copiedId}
                     msgId={msg.id}
@@ -257,42 +278,52 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
             {isLoading && (
               <div className="flex gap-3 items-center text-purple-400 text-xs animate-pulse font-mono">
                 <div className="w-7 h-7 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                  <Bot className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                 </div>
-                <span>Groq AI is thinking...</span>
+                <span>Copilot is analyzing code...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="px-3 py-2 bg-bg-deep/40 border-t border-border-main flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-            <span className="text-[10px] text-text-muted font-mono font-bold uppercase shrink-0">Quick Ask:</span>
-            <button
-              onClick={() => handleQuickSuggestion('How do I log in and access my dashboard?')}
-              className="px-2.5 py-1 rounded-full bg-surface hover:bg-surface-elevated border border-border-main text-[11px] text-text-secondary hover:text-text-primary cursor-pointer shrink-0 transition-colors"
-            >
-              🔑 How to log in?
-            </button>
-            <button
-              onClick={() => handleQuickSuggestion('How do I run and debug code in DEVSPACE?')}
-              className="px-2.5 py-1 rounded-full bg-surface hover:bg-surface-elevated border border-border-main text-[11px] text-text-secondary hover:text-text-primary cursor-pointer shrink-0 transition-colors"
-            >
-              🚀 How to run code?
-            </button>
-            <button
-              onClick={() => handleQuickSuggestion('How do I save snippets and share my project?')}
-              className="px-2.5 py-1 rounded-full bg-surface hover:bg-surface-elevated border border-border-main text-[11px] text-text-secondary hover:text-text-primary cursor-pointer shrink-0 transition-colors"
-            >
-              🔗 Sharing & Snippets
-            </button>
-            {activeCode && (
+          <div className="px-3 py-2 bg-bg-deep/50 border-t border-border-main flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+            <span className="text-[10px] text-purple-400 font-mono font-bold uppercase shrink-0">Copilot Actions:</span>
+            {terminalOutput && (terminalOutput.includes('Error') || terminalOutput.includes('Exception') || terminalOutput.includes('error')) && (
               <button
-                onClick={() => handleQuickSuggestion(`Explain the current code in ${activeFile?.name || 'the editor'} step-by-step.`)}
-                className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-[11px] text-purple-300 hover:bg-purple-500/25 cursor-pointer shrink-0 transition-colors font-bold"
+                onClick={() => handleQuickAction('Diagnose and fix the terminal execution error in my code.', 'fix')}
+                className="px-2.5 py-1 rounded-full bg-status-error/15 border border-status-error/30 text-[11px] text-status-error hover:bg-status-error/25 cursor-pointer shrink-0 transition-colors font-bold flex items-center gap-1"
               >
-                💡 Explain active code
+                🐞 Fix Terminal Error
               </button>
             )}
+            {activeCode && (
+              <>
+                <button
+                  onClick={() => handleQuickAction(`Explain the code in ${activeFile?.name || 'editor'} step-by-step.`, 'explain')}
+                  className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-[11px] text-purple-300 hover:bg-purple-500/25 cursor-pointer shrink-0 transition-colors font-bold"
+                >
+                  💡 Explain Code
+                </button>
+                <button
+                  onClick={() => handleQuickAction('Refactor active code for optimal performance and readability.', 'refactor')}
+                  className="px-2.5 py-1 rounded-full bg-surface hover:bg-surface-elevated border border-border-main text-[11px] text-text-secondary hover:text-text-primary cursor-pointer shrink-0 transition-colors"
+                >
+                  🚀 Optimize Code
+                </button>
+                <button
+                  onClick={() => handleQuickAction('Generate comprehensive unit tests for this code.', 'test')}
+                  className="px-2.5 py-1 rounded-full bg-surface hover:bg-surface-elevated border border-border-main text-[11px] text-text-secondary hover:text-text-primary cursor-pointer shrink-0 transition-colors"
+                >
+                  🧪 Write Tests
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => handleSendMessage('How do I run, debug, save, and share projects in DEVSPACE?')}
+              className="px-2.5 py-1 rounded-full bg-surface hover:bg-surface-elevated border border-border-main text-[11px] text-text-secondary hover:text-text-primary cursor-pointer shrink-0 transition-colors"
+            >
+              ❓ IDE Help
+            </button>
           </div>
 
           <form
@@ -310,8 +341,8 @@ I'm powered by **Groq AI** to give you instant code help and guidance on using t
                   handleSendMessage();
                 }
               }}
-              placeholder="Ask AI how to use DEVSPACE or help with code..."
-              className="flex-1 bg-surface border border-border-main rounded-xl px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple-500 resize-none font-sans"
+              placeholder="Ask Copilot doubt, bug fix, or code generation..."
+              className="flex-1 bg-surface border border-border-main rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple-500 resize-none font-sans"
             />
             <button
               type="submit"
@@ -365,14 +396,14 @@ function FormattedMessageContent({ content, onInsertCode, onCopy, copiedId, msgI
         } else if (part.type === 'code') {
           const isCopied = copiedId === part.id;
           return (
-            <div key={idx} className="my-2 bg-bg-deep rounded-xl border border-border-main overflow-hidden font-mono text-xs">
+            <div key={idx} className="my-2 bg-bg-deep rounded-xl border border-border-main overflow-hidden font-mono text-xs shadow-xs">
               <div className="px-3 py-1.5 bg-surface border-b border-border-main flex items-center justify-between text-[11px] text-text-muted">
                 <span className="font-semibold text-purple-400 capitalize">{part.language || 'code'}</span>
                 <div className="flex items-center gap-1.5">
                   {onInsertCode && (
                     <button
                       onClick={() => onInsertCode(part.code)}
-                      className="px-2 py-0.5 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30 transition-colors flex items-center gap-1 cursor-pointer text-[10px]"
+                      className="px-2 py-0.5 rounded bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 font-bold border border-purple-500/30 transition-colors flex items-center gap-1 cursor-pointer text-[10px]"
                       title="Insert code into active editor"
                     >
                       <Code className="w-3 h-3" />
@@ -388,7 +419,7 @@ function FormattedMessageContent({ content, onInsertCode, onCopy, copiedId, msgI
                   </button>
                 </div>
               </div>
-              <pre className="p-3 overflow-x-auto text-[11px] text-text-primary leading-normal no-scrollbar bg-bg-deep/80">
+              <pre className="p-3 overflow-x-auto text-[11px] text-text-primary leading-normal no-scrollbar bg-bg-deep/90">
                 <code>{part.code}</code>
               </pre>
             </div>
