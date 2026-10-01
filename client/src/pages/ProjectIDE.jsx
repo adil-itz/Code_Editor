@@ -31,6 +31,7 @@ import { ShareModal } from '../components/ide/ShareModal';
 import { ExecutionHistoryModal } from '../components/ide/ExecutionHistoryModal';
 import { SavedSnippetsModal } from '../components/ide/SavedSnippetsModal';
 import { AIAssistantDrawer } from '../components/ide/AIAssistantDrawer';
+import { InlineCopilotModal } from '../components/ide/InlineCopilotModal';
 import { Terminal, Terminal as TerminalIcon, Cpu, TextCursorInput as Input, Eye, AlertCircle, X } from 'lucide-react';
 
 export function ProjectIDE() {
@@ -126,6 +127,7 @@ export function ProjectIDE() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSnippetsOpen, setIsSnippetsOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const [isInlineCopilotOpen, setIsInlineCopilotOpen] = useState(false);
 
   const handleMouseDownResize = (e) => {
     e.preventDefault();
@@ -318,6 +320,10 @@ export function ProjectIDE() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
         handleToggleSidebar();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        setIsInlineCopilotOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -1252,9 +1258,25 @@ export function ProjectIDE() {
         diagnostics={diagnostics}
         terminalOutput={Array.isArray(output) ? output.map(o => o.text || o).join('\n') : String(output || '')}
         projectName={project?.name || ''}
+        onOpenInlineCopilot={() => {
+          setIsAIAssistantOpen(false);
+          setIsInlineCopilotOpen(true);
+        }}
         onInsertCode={(codeToInsert) => {
           if (activeFileId && codeToInsert !== undefined) {
             handleCodeChange(codeToInsert);
+          }
+        }}
+      />
+
+      <InlineCopilotModal
+        isOpen={isInlineCopilotOpen}
+        onClose={() => setIsInlineCopilotOpen(false)}
+        activeFile={activeFile}
+        activeCode={currentCode}
+        onApplyCode={(updatedCode) => {
+          if (activeFileId && updatedCode !== undefined) {
+            handleCodeChange(updatedCode);
           }
         }}
       />
